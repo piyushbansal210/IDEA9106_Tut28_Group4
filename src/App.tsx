@@ -1,71 +1,50 @@
-import type { Booking, Concert, User } from './types'
-import { arenas, seedConcerts, seedUsers } from './data'
-import { usePersistentState } from './storage'
-import { takenSeats } from './seats'
-import Login from './components/Login'
-import CustomerPanel from './components/CustomerPanel'
-import AdminPanel from './components/AdminPanel'
+import { useStore } from './store'
+import { href, useRoute } from './router'
+import Nav from './components/Nav'
+import Home from './pages/Home'
+import ArtistPage from './pages/ArtistPage'
+import ShowPage from './pages/ShowPage'
+import AuthPage from './pages/AuthPage'
+import MyTickets from './pages/MyTickets'
+import AdminPage from './pages/AdminPage'
 
 export default function App() {
-  const [users, setUsers] = usePersistentState<User[]>('tix:users', seedUsers)
-  const [concerts, setConcerts] = usePersistentState<Concert[]>('tix:concerts', seedConcerts)
-  const [bookings, setBookings] = usePersistentState<Booking[]>('tix:bookings', [])
-  const [session, setSession] = usePersistentState<string | null>('tix:session', null)
+  const store = useStore()
+  const [page, param] = useRoute()
 
-  const user = users.find((u) => u.username === session) ?? null
-
-  const register = (newUser: User) => {
-    setUsers([...users, newUser])
-    setSession(newUser.username)
+  if (!store.ready) {
+    return (
+      <div className="loading-screen">
+        <div className="logo-mark big" />
+      </div>
+    )
   }
 
-  const book = (concertId: string, seats: string[], total: number) => {
-    if (!user) return false
-    const taken = takenSeats(bookings, concertId)
-    if (seats.some((s) => taken.has(s))) return false
-    setBookings([
-      ...bookings,
-      { id: crypto.randomUUID(), concertId, username: user.username, seats, total, createdAt: new Date().toISOString() },
-    ])
-    return true
-  }
-
-  const sortedConcerts = [...concerts].sort((a, b) => a.date.localeCompare(b.date))
+  let content
+  if (page === 'artists' && param) content = <ArtistPage key={param} store={store} name={param} />
+  else if (page === 'shows' && param) content = <ShowPage key={param} store={store} id={param} />
+  else if (page === 'login' || page === 'register') content = <AuthPage key={page} store={store} mode={page} />
+  else if (page === 'tickets') content = <MyTickets store={store} />
+  else if (page === 'admin') content = <AdminPage store={store} />
+  else content = <Home store={store} />
 
   return (
-    <main>
-      <header>
-        <div>
-          <h1>QuickSeat</h1>
-          <p className="muted small">No queues. Pick your seats and book in seconds.</p>
+    <>
+      <Nav store={store} page={page ?? ''} />
+      {store.error && <div className="banner-error">{store.error}</div>}
+      <main>{content}</main>
+      <footer className="footer">
+        <div className="container footer-inner">
+          <a href={href()} className="brand">
+            <span className="logo-mark" /> QuickSeat
+          </a>
+          <p className="muted small">
+            Pick your exact seat and book in seconds – no queues, no waiting rooms. A design thinking prototype,
+            IDEA9106.
+          </p>
+          <p className="muted tiny">Artist photos from Wikimedia Commons (CC licences).</p>
         </div>
-        {user && (
-          <div className="user">
-            <span className="small">
-              {user.username} <span className="badge">{user.role}</span>
-            </span>
-            <button className="secondary" onClick={() => setSession(null)}>Log out</button>
-          </div>
-        )}
-      </header>
-
-      {!user ? (
-        <Login users={users} onLogin={(u) => setSession(u.username)} onRegister={register} />
-      ) : user.role === 'admin' ? (
-        <AdminPanel
-          concerts={sortedConcerts}
-          arenas={arenas}
-          bookings={bookings}
-          onAdd={(c) => setConcerts([...concerts, { ...c, id: crypto.randomUUID() }])}
-          onUpdate={(c) => setConcerts(concerts.map((x) => (x.id === c.id ? c : x)))}
-          onDelete={(id) => {
-            setConcerts(concerts.filter((c) => c.id !== id))
-            setBookings(bookings.filter((b) => b.concertId !== id))
-          }}
-        />
-      ) : (
-        <CustomerPanel user={user} concerts={sortedConcerts} arenas={arenas} bookings={bookings} onBook={book} />
-      )}
-    </main>
+      </footer>
+    </>
   )
 }

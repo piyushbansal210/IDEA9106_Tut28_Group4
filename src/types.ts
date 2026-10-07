@@ -2,7 +2,8 @@ export type Role = 'admin' | 'customer'
 
 export interface User {
   username: string
-  password: string
+  name: string
+  email: string
   role: Role
 }
 
@@ -21,6 +22,14 @@ export interface Arena {
   sections: Section[]
 }
 
+export interface Artist {
+  name: string
+  genre: string
+  bio: string
+  imageUrl: string
+}
+
+// One show: an artist playing a given arena on a given date.
 export interface Concert {
   id: string
   artist: string
@@ -28,6 +37,8 @@ export interface Concert {
   description: string
   arenaId: string
   date: string
+  // How many tickets the admin has released for sale (at most the arena's capacity).
+  ticketLimit: number
 }
 
 export interface Booking {
