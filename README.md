@@ -1,75 +1,87 @@
 # QuickSeat
 
-A small concert ticketing prototype (React + TypeScript, Vite, with an Express + SQLite backend). The idea: cut the waiting time
-for people booking tickets by letting them pick their exact seats and book instantly.
+A concert-ticketing prototype for IDEA9106 (React + TypeScript + Vite, frontend only). It's built around a researched
+user journey: **the queue can't be avoided, but it doesn't have to be blind.** Fans set a ticket plan before the sale,
+join a fair simulated queue that tracks their sections live, and only get interrupted when their plan changes.
+
+The full design brief and build steps are in [docs/redesign-agent-instructions.md](docs/redesign-agent-instructions.md).
 
 ## Run
 
-Requires Node 24+ (the server uses Node's built-in TypeScript support and `node:sqlite`).
+Requires Node 20+.
 
 ```bash
 npm install
 npm run dev
 ```
 
-This starts both the API on http://localhost:3001 and the web app on http://localhost:5173
-(Vite forwards `/api` requests to the API). Run them separately with `npm run dev:server` and `npm run dev:web`.
+Open http://localhost:5173.
 
 ## Demo accounts
 
 | Role     | Username | Password    |
 | -------- | -------- | ----------- |
-| Admin    | admin    | admin123    |
 | Customer | customer | customer123 |
+| Admin    | admin    | admin123    |
 
-Customers can also sign up from the login page.
+## Demo script
+
+Sale times are relative to page load, so every sale state is always available:
+
+| Show | State |
+| --- | --- |
+| Taylor Swift · Sydney | Waiting room open, queue opens **2 minutes** after load |
+| Taylor Swift · Brisbane | Sold out (waitlist) |
+| BTS · Perth | Queue open now |
+| BTS · Melbourne | Presale in 3 days |
+| Charlie Puth · Melbourne | On sale, no queue |
+| Charlie Puth · Sydney | Announced (12 days) |
+
+1. Land on the homepage: a soft login pop-up appears after ~2s. Choose **Just browsing**.
+2. Open the palette icon in the navbar and try **Earth Red**, then **Sand**: the navbar text switches to dark automatically.
+3. Open **Permission to Dance: Australia** → Perth → **Join queue**. Log in as `customer` when asked; the plan
+   opens straight away. Pick 2 tickets, ≤ $180, rank three sections, choose **Ask me first**, save.
+4. Tap the record in the bottom-right for an opt-in soundtrack, and explore the story waveform.
+5. Add `?demo=1` to the URL (e.g. `#/tour/ptd-australia/show/ptd-per/queue?demo=1`) for demo controls: speed ×1/×10/×50,
+   jump to the next event, or restart with the sold-out storyline.
+6. Answer the decision pop-up when a section sells out, reach **It's your turn**, check out within 8 minutes.
+7. Re-run with the sold-out storyline to see the waitlist outcome.
 
 ## Features
 
-- **Homepage**: hero with search and city filters, artist line-up with photos, upcoming shows with live availability, arena guide.
-- **Artist pages**: photo, bio, number of shows, cities and every tour date.
-- **Arena seat map**: seats drawn in curved rows around the stage, coloured by section/price. Pick up to 8 seats.
-- **Accounts**: sign up with name, email, username and password (validated, with a strength meter), log in with username or email.
-  Guests can pick seats first; they're kept through login.
-- **My tickets**: ticket-style cards for each booking.
-- **Admin dashboard**: sales overview; add a tour with several shows at once, each with its own arena, date and number of
-  tickets for sale; edit ticket counts, dates and arenas; manage artist photos/bios; see all bookings.
-- Seeded with Taylor Swift, BTS, Charlie Puth, Dua Lipa, Ed Sheeran and Coldplay at Australian arenas.
+- **Landing page:** hero carousel with live countdowns, poster tour cards with status badges, city filter, search,
+  "How QuickSeat works".
+- **Login:** a soft, dismissible welcome pop-up, plus login asked for only when an action needs it (then it resumes
+  that action). Sign-up has validation and a strength meter.
+- **Tour page:** dates in your time zone (plus venue time), ticket plan (quantity, price guardrail, 3 ranked sections on the
+  arena map, "ask me first" vs "move on automatically"), ready-to-buy checklist, artist story preview.
+- **Waiting room → queue → your turn → outcome**, modelled on the reference screens: people ahead, best-chance sentence,
+  one alert at a time, sections-along-the-queue chart, plan table, decision pop-up with a 60s timer, pre-picked best seats,
+  checkout timer, success tickets with calendar download, or sold-out waitlist / face-value resale.
+- **Record player:** never autoplays. Tapping it plays a generated mood loop for the artist (original tones, not
+  recordings), with volume, next, minimise, and a Spotify embed for the real songs. It pauses itself at your turn.
+- **Alerts:** soft chime (Web Audio) and optional browser notifications; the tab title shows your progress.
+- **Themes:** white base, black navbar by default, switchable to the Desert Chic palette (Orange Rust, Honey Ginger,
+  Sand, Earth Red, Sandstone). Text colour is picked automatically for WCAG AA contrast, and colours that can't reach it
+  are darkened slightly. Optional "Match the artist" mode.
+- **My tickets** and **Admin** (edit tours, posters, sale times, sold-out flags, add/delete shows, bookings, reset demo data).
 
-Data is stored in a SQLite database at `server/quickseat.db`, created and seeded with the demo accounts and
-concerts on first run. Delete that file and restart the server to reset. Set `PORT` or `DB_FILE` to override the defaults.
+## Adding real media
 
-## API
-
-| Method | Path                    | Who      | Notes                                         |
-| ------ | ----------------------- | -------- | --------------------------------------------- |
-| POST   | `/api/auth/login`       | anyone   | `{ username, password }` → `{ token, user }`  |
-| POST   | `/api/auth/register`    | anyone   | `{ name, email, username, password }`         |
-| GET    | `/api/auth/me`          | logged in| current user                                  |
-| POST   | `/api/auth/logout`      | logged in|                                               |
-| GET    | `/api/arenas`           | anyone   |                                               |
-| GET    | `/api/concerts`         | anyone   | sorted by date                                |
-| GET    | `/api/concerts/taken`   | anyone   | `{ [concertId]: seatId[] }`                   |
-| GET    | `/api/artists`          | anyone   |                                               |
-| PUT    | `/api/artists/:name`    | admin    | create/update `{ genre, bio, imageUrl }`      |
-| POST   | `/api/concerts`         | admin    | `{ artist, title, description, shows: [{ arenaId, date, ticketLimit }] }` |
-| PUT    | `/api/concerts/:id`     | admin    | arena locked once sold; ticketLimit ≥ sold, ≤ capacity |
-| DELETE | `/api/concerts/:id`     | admin    | also deletes its bookings                     |
-| GET    | `/api/bookings`         | logged in| admins see all, customers see their own       |
-| POST   | `/api/bookings`         | logged in| `{ concertId, seats }`, max 8, priced server-side; 409 if a seat is taken |
-
-Send the token as `Authorization: Bearer <token>`. Passwords are hashed with scrypt.
+- Posters: put licensed images at `public/artists/<artistId>.jpg` and set the poster URL in Admin (or `posterUrl` in
+  `src/data.ts`). Without one, a generated poster is used.
+- Audio: put licensed or royalty-free clips in `public/audio/<artistId>/` and set `clipUrl` on a milestone in
+  `src/data.ts`; the story timeline then offers "Play a snippet" through the record player.
 
 ## Structure
 
-- `src/data.ts` – arenas (with seating sections), seed concerts, demo users
-- `src/types.ts` – shared types
-- `src/seats.ts` – seat id / price helpers
-- `src/api.ts` – API client (keeps the login token in localStorage)
-- `src/store.ts` – loads app data from the API; `src/router.ts` – tiny hash router
-- `src/pages/` – Home, ArtistPage, ShowPage, AuthPage, MyTickets, AdminPage
-- `src/components/ArenaMap.tsx` – SVG seat map
-- `public/artists/` – artist photos (credits in `CREDITS.md`)
-- `server/index.ts` – Express routes
-- `server/db.ts` – SQLite schema, password hashing, first-run seeding
-- `src/components/` – Nav, ShowRow, ArtistImage, ArenaMap
+- `src/data.ts`: artists (bios, milestones), arenas and sections, tours, shows
+- `src/store.tsx`: app state (auth, bookings, plans, waitlists, admin edits) saved to localStorage
+- `src/queue/simulator.ts`: deterministic queue simulation and storylines (no React)
+- `src/theme.ts`: theme palette and contrast engine; `src/audio.ts`: record player, chime and notifications
+- `src/sale.ts`: sale status rules; `src/actions.ts`: what each status's button does; `src/router.ts`: hash router
+- `src/pages/`: Landing, TourPage, WaitingRoom, QueuePage, SeatsPage, OutcomePage, MyTickets, AdminPage, HelpPage
+- `src/components/`: Navbar, ThemePicker, Poster, StatusBadge, Countdown, ArenaMap, PlanModal, QueueChart,
+  StoryTimeline, RecordPlayer, LoginModal, Modal, Toasts, TicketCard
+
+Artist facts in `src/data.ts` should be double-checked before presenting.
