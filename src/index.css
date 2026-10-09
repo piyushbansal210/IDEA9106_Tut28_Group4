@@ -597,3 +597,5 @@ table.data th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06
 .nudge { z-index: 95; }
 .link-btn svg { display: inline-block; vertical-align: -3px; margin-right: 4px; }
 @media (max-width: 600px) { .trivia .ring { justify-self: start; margin-top: 0; } }
+.icon-btn { position: relative; }
+.avatar-dot { position: absolute; top: 4px; right: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--streak-tried); border: 2px solid var(--nav-bg); }

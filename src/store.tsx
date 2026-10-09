@@ -54,6 +54,8 @@ interface Store {
   waitlists: Waitlist[]
   joinWaitlist: (showId: string, place?: number) => Waitlist | null
   planFor: (showId: string) => TicketPlan | undefined
+  planOf: (username: string, showId: string) => TicketPlan | undefined
+  users: User[]
   savePlan: (plan: TicketPlan) => void
 
   toasts: ToastItem[]
@@ -218,6 +220,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return w
     },
     planFor: (showId) => plans[planKey(showId)] ?? plans[`guest:${showId}`],
+    planOf: (username, showId) => plans[`${username}:${showId}`],
+    users,
     savePlan: (plan) => setPlans((p) => ({ ...p, [planKey(plan.showId)]: plan })),
 
     toasts,

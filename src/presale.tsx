@@ -1,5 +1,8 @@
 import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
-import type { DayState, PendingQuestion, Registration, Show, StreakDay, StreakRecord, StreakResult } from './types'
+import type { DayState, EmailTemplate, PendingQuestion, Registration, SentEmail, Show, StreakDay, StreakRecord, StreakResult } from './types'
+import { buildEmail } from './emails'
+import { formatShowDate } from './seats'
+import { showPath } from './sale'
 import { useStore } from './store'
 import { seedShows, seedTours } from './data'
 import { STORAGE_PREFIX as P, readStored, usePersistentState } from './storage'
@@ -35,7 +38,7 @@ interface Presale {
   register: (showId: string, prefs: RegistrationPrefs) => void
   unregister: (showId: string) => void
 
-  streakFor: (showId: string) => StreakView
+  streakFor: (showId: string, username?: string) => StreakView
   startQuestion: (showId: string) => PendingQuestion | null
   // `at` is when the fan clicked, so a short reveal animation can't push an in-time answer over the limit.
   submitAnswer: (showId: string, displayIndex: number | null, at?: number) => StreakDay | null
@@ -57,6 +60,12 @@ interface Presale {
   sendNudge: (showId: string, ifIdle?: boolean) => void
   dismissNudge: () => void
   resetPresale: () => void
+
+  // Simulated email: stored in an in-app inbox, never sent.
+  inbox: SentEmail[]
+  allEmails: SentEmail[]
+  sendEmail: (username: string, showId: string, template: EmailTemplate) => SentEmail | null
+  markEmailRead: (id: string) => void
 }
 
 const PresaleContext = createContext<Presale | null>(null)
@@ -120,6 +129,7 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
   const [registrations, setRegistrations] = usePersistentState<Registration[]>(`${P}registrations`, initialRegistrations)
   const [streaks, setStreaks] = usePersistentState<Record<string, StreakRecord>>(`${P}streaks`, initialStreaks)
   const [demoDaysUntil, setDemoDaysUntil] = usePersistentState<number | null>(`${P}demo-days`, null, true)
+  const [emails, setEmails] = usePersistentState<SentEmail[]>(`${P}emails`, [])
   const [preRegisterFor, setPreRegisterFor] = useState<string | null>(null)
   const [triviaFor, setTriviaFor] = useState<string | null>(null)
   const [triviaAuto, setTriviaAuto] = useState<DemoAnswer | null>(null)
@@ -138,10 +148,10 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
   const showById = (id: string) => store.findShow(id)
   const registrationFor = (showId: string) => registrations.find((r) => r.showId === showId && r.username === userRef.current?.username)
 
-  const streakFor = (showId: string): StreakView => {
+  const streakFor = (showId: string, username = userRef.current?.username ?? 'guest'): StreakView => {
     const show = showById(showId)
-    const registration = registrationFor(showId)
-    const record = settlePending(streaks[key(showId)] ?? { days: {} }, Date.now())
+    const registration = registrations.find((r) => r.showId === showId && r.username === username)
+    const record = settlePending(streaks[`${username}:${showId}`] ?? { days: {} }, Date.now())
     const daysUntil = show ? daysUntilSale(show.saleOpensAt, presaleNow(show)) : PRESALE_WINDOW_DAYS + 1
     const dayIndex = dayIndexFor(daysUntil)
     const states = deriveDayStates(record, dayIndex, daysUntil, registration?.startDay ?? 1)
@@ -246,7 +256,39 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
       setRegistrations(initialRegistrations())
       setStreaks(initialStreaks())
       setDemoDaysUntil(null)
+      setEmails([])
     },
+
+    inbox: emails.filter((e) => e.username === user?.username).sort((a, b) => b.sentAt.localeCompare(a.sentAt)),
+    allEmails: emails,
+    sendEmail: (username, showId, template) => {
+      const fan = store.users.find((u) => u.username === username)
+      const show = showById(showId)
+      if (!fan || !show) return null
+      const tour = store.tourOf(show)
+      const arena = store.arenaOf(show)
+      const base = `${location.origin}${location.pathname}#`
+      const email = buildEmail(template, {
+        name: fan.name.split(' ')[0],
+        artist: store.artistOf(tour).name,
+        tourName: tour.name,
+        city: arena.city,
+        arenaName: arena.name,
+        saleTime: formatShowDate(show.saleOpensAt, arena.timeZone),
+        waitingRoomTime: new Date(Date.parse(show.saleOpensAt) - 30 * 60_000).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' }),
+        streak: streakFor(showId, username).length,
+        readiness: {
+          loggedIn: store.user?.username === username,
+          plan: show.hasQueue ? !!store.planOf(username, showId) : null,
+          card: !!fan.paymentSaved,
+        },
+        links: { hub: base + showPath(show, 'hub'), plan: `${base}/tour/${tour.id}?plan=${show.id}`, card: base + showPath(show, 'hub'), waiting: base + showPath(show, 'waiting') },
+      })
+      const sent: SentEmail = { id: crypto.randomUUID(), username, showId, template, ...email, sentAt: new Date(presaleNow(show)).toISOString(), read: false }
+      setEmails((list) => [...list, sent])
+      return sent
+    },
+    markEmailRead: (id) => setEmails((list) => list.map((e) => (e.id === id ? { ...e, read: true } : e))),
   }
 
   return <PresaleContext.Provider value={value}>{children}</PresaleContext.Provider>

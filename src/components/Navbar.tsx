@@ -31,6 +31,7 @@ function UserMenu() {
   const store = useStore()
   const { user, logout } = store
   const presale = usePresale()
+  const unread = presale.inbox.filter((e) => !e.read).length
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
 
@@ -48,6 +49,7 @@ function UserMenu() {
     <div className="relative" ref={wrap} onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
       <button className="icon-btn" aria-label={`Account menu for ${user.name}`} aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(!open)}>
         <span className="avatar">{initials}</span>
+        {unread > 0 && <span className="avatar-dot" aria-label={`${unread} unread emails`} />}
       </button>
       {open && (
         <div className="menu" role="menu" onClick={() => setOpen(false)}>
@@ -57,6 +59,7 @@ function UserMenu() {
           </div>
           <hr />
           <a role="menuitem" href={href('/tickets')}>My tickets</a>
+          <a role="menuitem" href={href('/inbox')}>Inbox{unread ? ` (${unread} new)` : ''}</a>
           {presale.myRegistrations.map((r) => {
             const show = store.findShow(r.showId)
             if (!show) return null

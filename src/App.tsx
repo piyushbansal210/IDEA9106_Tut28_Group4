@@ -10,6 +10,8 @@ import PreRegisterModal from './components/PreRegisterModal'
 import TriviaModal from './components/TriviaModal'
 import Nudge, { NudgeScheduler } from './components/Nudge'
 import PresaleHub from './pages/PresaleHub'
+import InboxPage from './pages/InboxPage'
+import EmailScheduler from './components/EmailScheduler'
 import Landing from './pages/Landing'
 import TourPage from './pages/TourPage'
 import WaitingRoom from './pages/WaitingRoom'
@@ -29,6 +31,7 @@ function Page() {
   if (a === 'tickets' && !id) return <MyTickets />
   if (a === 'admin' && !id) return <AdminPage />
   if (a === 'help' && !id) return <HelpPage />
+  if (a === 'inbox' && !id) return <InboxPage />
   if (a === 'tour' && id && !b) return <TourPage key={id} tourId={id} />
   if (a === 'tour' && b === 'show' && showId) {
     if (page === 'hub') return <PresaleHub showId={showId} />
@@ -56,6 +59,7 @@ export default function App() {
       <TriviaModal />
       <Nudge />
       <NudgeScheduler />
+      <EmailScheduler />
       <Toasts />
       </PresaleProvider>
     </StoreProvider>
