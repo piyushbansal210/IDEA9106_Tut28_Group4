@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import { usePresale } from '../presale'
 import { cities } from '../data'
 import { href, navigate, useRoute } from '../router'
 import Icon from './Icon'
@@ -27,7 +28,10 @@ function SearchBox({ id }: { id: string }) {
 }
 
 function UserMenu() {
-  const { user, logout } = useStore()
+  const store = useStore()
+  const { user, logout } = store
+  const presale = usePresale()
+  const unread = presale.inbox.filter((e) => !e.read).length
   const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
 
@@ -45,6 +49,7 @@ function UserMenu() {
     <div className="relative" ref={wrap} onKeyDown={(e) => e.key === 'Escape' && setOpen(false)}>
       <button className="icon-btn" aria-label={`Account menu for ${user.name}`} aria-expanded={open} aria-haspopup="menu" onClick={() => setOpen(!open)}>
         <span className="avatar">{initials}</span>
+        {unread > 0 && <span className="avatar-dot" aria-label={`${unread} unread emails`} />}
       </button>
       {open && (
         <div className="menu" role="menu" onClick={() => setOpen(false)}>
@@ -54,6 +59,16 @@ function UserMenu() {
           </div>
           <hr />
           <a role="menuitem" href={href('/tickets')}>My tickets</a>
+          <a role="menuitem" href={href('/inbox')}>Inbox{unread ? ` (${unread} new)` : ''}</a>
+          {presale.myRegistrations.map((r) => {
+            const show = store.findShow(r.showId)
+            if (!show) return null
+            return (
+              <a key={r.showId} role="menuitem" href={href(`/tour/${show.tourId}/show/${show.id}/hub`)}>
+                Pre-sale hub: {store.artistOf(store.tourOf(show)).name} · {store.arenaOf(show).city}
+              </a>
+            )
+          })}
           {user.role === 'admin' && <a role="menuitem" href={href('/admin')}>Admin dashboard</a>}
           <hr />
           <button role="menuitem" onClick={() => { logout(); navigate('/') }}>Log out</button>

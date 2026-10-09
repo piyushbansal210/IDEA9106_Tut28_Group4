@@ -1,7 +1,8 @@
 import type { SaleStatus, Show } from './types'
 import { useStore } from './store'
+import { usePresale } from './presale'
 import { navigate } from './router'
-import { showPath } from './sale'
+import { primaryAction, showPath } from './sale'
 
 const order: SaleStatus[] = ['queue-open', 'waiting-room', 'on-sale', 'presale-soon', 'announced', 'sold-out']
 
@@ -14,13 +15,24 @@ export function useFeaturedShow() {
       .sort((a, b) => order.indexOf(statusOf(a)) - order.indexOf(statusOf(b)) || a.saleOpensAt.localeCompare(b.saleOpensAt))[0]
 }
 
+// Label for a show's primary button, aware of pre-registration.
+export function useActionLabel() {
+  const store = useStore()
+  const presale = usePresale()
+  return (show: Show) => {
+    const status = store.statusOf(show)
+    if ((status === 'announced' || status === 'presale-soon') && presale.registrationFor(show.id)) return 'My pre-sale hub'
+    return primaryAction[status]
+  }
+}
+
 // What the single primary button does for a show, given its sale status. Account-only steps ask to log in
 // first and then carry on with exactly what the user tried to do.
 export function useShowAction() {
   const store = useStore()
+  const presale = usePresale()
   return (show: Show) => {
     const status = store.statusOf(show)
-    const arena = store.arenaOf(show)
     const goWithPlan = (page: 'waiting' | 'queue') => {
       if (store.planFor(show.id)) navigate(showPath(show, page))
       else navigate(`/tour/${show.tourId}?plan=${show.id}&then=${page}`)
@@ -29,15 +41,8 @@ export function useShowAction() {
     switch (status) {
       case 'announced':
       case 'presale-soon':
-        return store.requireLogin('Log in to get a reminder before tickets go on sale.', () => {
-          if (store.hasReminder(show.id)) {
-            store.toggleReminder(show.id)
-            store.toast('Reminder removed.')
-          } else {
-            store.toggleReminder(show.id)
-            store.toast(`You're registered for the ${arena.city} sale. We'll remind you 1 hour before it opens.`)
-          }
-        })
+        // Registered fans go to their pre-sale hub; everyone else pre-registers (login first).
+        return presale.registrationFor(show.id) ? navigate(showPath(show, 'hub')) : presale.openPreRegister(show.id)
       case 'waiting-room':
         return store.requireLogin('Log in to join the waiting room. Your ticket plan is saved to your account.', () => goWithPlan('waiting'))
       case 'queue-open':

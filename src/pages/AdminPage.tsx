@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { useStore } from '../store'
+import { usePresale } from '../presale'
 import { arenas } from '../data'
 import { money } from '../seats'
-import type { Show } from '../types'
+import type { EmailTemplate, Registration, Show } from '../types'
+import { templateNames } from '../emails'
 import StatusBadge from '../components/StatusBadge'
 import { LoginGate, useDocumentTitle } from './shared'
 
@@ -40,8 +42,50 @@ function ShowEditor({ show }: { show: Show }) {
   )
 }
 
+// Sends any tips email template to a registered fan's in-app inbox.
+function TestEmail() {
+  const store = useStore()
+  const presale = usePresale()
+  const regs = presale.allRegistrations.filter((r) => store.findShow(r.showId))
+  const [reg, setReg] = useState(0)
+  const [template, setTemplate] = useState<EmailTemplate>('day-7')
+  const describe = (r: Registration) => {
+    const show = store.findShow(r.showId)!
+    const name = store.users.find((u) => u.username === r.username)?.name ?? r.username
+    return `${name} · ${store.artistOf(store.tourOf(show)).name} ${store.arenaOf(show).city}`
+  }
+
+  return (
+    <section className="card stack">
+      <h2 style={{ fontSize: 24 }}>Send a test email</h2>
+      <p className="muted small">Emails are simulated: they go to the fan's in-app inbox (#/inbox), never to a real address.</p>
+      {regs.length === 0 ? <p className="muted">No pre-registered fans yet.</p> : (
+        <form className="form-grid" onSubmit={(e) => {
+          e.preventDefault()
+          const r = regs[reg]
+          const sent = r && presale.sendEmail(r.username, r.showId, template)
+          if (sent) store.toast(`Sent "${sent.subject}" to ${describe(r).split(' · ')[0]}'s inbox.`)
+        }}>
+          <label className="field">Registered fan
+            <select value={reg} onChange={(e) => setReg(Number(e.target.value))}>
+              {regs.map((r, i) => <option key={`${r.username}:${r.showId}`} value={i}>{describe(r)}</option>)}
+            </select>
+          </label>
+          <label className="field">Template
+            <select value={template} onChange={(e) => setTemplate(e.target.value as EmailTemplate)}>
+              {(Object.keys(templateNames) as EmailTemplate[]).map((t) => <option key={t} value={t}>{templateNames[t]}</option>)}
+            </select>
+          </label>
+          <div style={{ alignSelf: 'end' }}><button className="btn btn-primary" type="submit">Send test email</button></div>
+        </form>
+      )}
+    </section>
+  )
+}
+
 function Admin() {
   const store = useStore()
+  const presale = usePresale()
   useDocumentTitle('Admin')
   const [form, setForm] = useState({ tourId: store.tours[0]?.id ?? '', arenaId: arenas[0].id, date: '', saleOpensAt: '', ticketLimit: 12000, hasQueue: true })
 
@@ -62,7 +106,7 @@ function Admin() {
     <div className="container page stack-lg">
       <div className="row between">
         <h1>Admin dashboard</h1>
-        <button className="btn btn-secondary" onClick={() => confirm('Reset all demo data? Bookings, plans and edits are cleared.') && store.resetDemo()}>Reset demo data</button>
+        <button className="btn btn-secondary" onClick={() => confirm('Reset all demo data? Bookings, plans and edits are cleared.') && (store.resetDemo(), presale.resetPresale())}>Reset demo data</button>
       </div>
 
       <section className="stats">
@@ -100,6 +144,8 @@ function Admin() {
           <div><button className="btn btn-primary" type="submit">Add show</button></div>
         </form>
       </section>
+
+      <TestEmail />
 
       <section className="card stack">
         <h2 style={{ fontSize: 24 }}>All bookings</h2>

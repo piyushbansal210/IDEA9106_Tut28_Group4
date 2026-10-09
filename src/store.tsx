@@ -54,9 +54,9 @@ interface Store {
   waitlists: Waitlist[]
   joinWaitlist: (showId: string, place?: number) => Waitlist | null
   planFor: (showId: string) => TicketPlan | undefined
+  planOf: (username: string, showId: string) => TicketPlan | undefined
+  users: User[]
   savePlan: (plan: TicketPlan) => void
-  hasReminder: (showId: string) => boolean
-  toggleReminder: (showId: string) => void
 
   toasts: ToastItem[]
   toast: (message: string) => void
@@ -89,7 +89,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [bookings, setBookings] = usePersistentState<Booking[]>(`${P}bookings`, [])
   const [waitlists, setWaitlists] = usePersistentState<Waitlist[]>(`${P}waitlists`, [])
   const [plans, setPlans] = usePersistentState<Record<string, TicketPlan>>(`${P}plans`, {})
-  const [reminders, setReminders] = usePersistentState<string[]>(`${P}reminders`, [])
   // Admin edits are stored as patches on top of the seed data, so seeded sale times stay relative to now.
   const [tourEdits, setTourEdits] = usePersistentState<Record<string, Partial<Tour>>>(`${P}tour-edits`, {})
   const [showEdits, setShowEdits] = usePersistentState<Record<string, Partial<Show>>>(`${P}show-edits`, {})
@@ -221,12 +220,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return w
     },
     planFor: (showId) => plans[planKey(showId)] ?? plans[`guest:${showId}`],
+    planOf: (username, showId) => plans[`${username}:${showId}`],
+    users,
     savePlan: (plan) => setPlans((p) => ({ ...p, [planKey(plan.showId)]: plan })),
-    hasReminder: (showId) => reminders.includes(planKey(showId)),
-    toggleReminder: (showId) => {
-      const key = planKey(showId)
-      setReminders((r) => (r.includes(key) ? r.filter((x) => x !== key) : [...r, key]))
-    },
 
     toasts,
     toast,
@@ -247,7 +243,6 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setBookings([])
       setWaitlists([])
       setPlans({})
-      setReminders([])
       toast('Demo data reset.')
     },
   }

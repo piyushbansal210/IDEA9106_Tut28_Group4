@@ -76,8 +76,9 @@ export const formatNumber = (n: number) => Math.max(0, Math.round(n)).toLocaleSt
 export function formatShowDate(iso: string, venueTimeZone?: string) {
   const d = new Date(iso)
   const local = d.toLocaleString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' })
-  const viewerZone = Intl.DateTimeFormat().resolvedOptions().timeZone
-  if (!venueTimeZone || venueTimeZone === viewerZone) return local
+  if (!venueTimeZone) return local
+  const time = (timeZone?: string) => d.toLocaleString('en-AU', { hour: 'numeric', minute: '2-digit', timeZone })
+  if (time(venueTimeZone) === time()) return local
   const venue = d.toLocaleString('en-AU', { hour: 'numeric', minute: '2-digit', timeZone: venueTimeZone, timeZoneName: 'short' })
   return `${local} (${venue} venue time)`
 }
