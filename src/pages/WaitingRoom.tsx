@@ -35,6 +35,10 @@ function Room({ showId }: { showId: string }) {
   useEffect(() => {
     if (status === 'queue-open') navigate(showPath(show, 'queue'), { keepQuery: true })
   }, [status, show])
+  const needsPlan = !plan && status === 'waiting-room'
+  useEffect(() => {
+    if (needsPlan) navigate(`/tour/${tour.id}?plan=${show.id}&then=waiting`)
+  }, [needsPlan, tour.id, show.id])
 
   if (!plan) {
     return (

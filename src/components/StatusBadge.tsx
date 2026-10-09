@@ -4,10 +4,10 @@ import Icon, { type IconName } from './Icon'
 
 // One shared vocabulary for every status in the app. Icon + text, never colour alone.
 const sale: Record<SaleStatus, { label: string; tone: string; icon?: IconName }> = {
-  announced: { label: 'Announced', tone: 'info', icon: 'calendar' },
-  'presale-soon': { label: 'Presale soon', tone: 'info', icon: 'clock' },
-  'waiting-room': { label: 'Waiting room open', tone: 'live' },
-  'queue-open': { label: 'Queue open', tone: 'live' },
+  announced: { label: 'Announced', tone: 'neutral', icon: 'calendar' },
+  'presale-soon': { label: 'Presale soon', tone: 'info', icon: 'bell' },
+  'waiting-room': { label: 'Waiting room open', tone: 'wait', icon: 'clock' },
+  'queue-open': { label: 'Queue open', tone: 'queue' },
   'on-sale': { label: 'On sale', tone: 'good', icon: 'ticket' },
   'sold-out': { label: 'Sold out', tone: 'off', icon: 'ban' },
 }

@@ -465,3 +465,27 @@ table.data th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06
   .qfloat .qtrack { grid-column: 1 / -1; grid-row: 2; }
   .qfloat-on .sticky-alert { top: 176px; }
 }
+
+/* Sale badges: each state has its own colour role, fixed across themes so contrast never depends on the theme. */
+.badge-wait { background: #f3e6cf; color: #3d2e14; border-color: #d9c29a; }
+.badge-queue { background: #a8401b; color: #ffffff; }
+.badge-queue .pulse { background: #ffffff; }
+
+/* Record player: inset from the edge with room for the tonearm; pages leave space for it on phones. */
+.record-dock { right: 24px; }
+.record-btn svg { overflow: visible; }
+@media (max-width: 560px) {
+  .record-dock { right: 16px; bottom: 12px; }
+  main { padding-bottom: 88px; }
+}
+.badge .pulse { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.6s ease-in-out infinite; }
+
+/* Readiness checklist: one status + one action per row */
+.ready-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.ready-list li { display: flex; align-items: center; gap: 12px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 15px; }
+.ready-status { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: grid; place-items: center; flex: none; color: #fff; }
+.ready-status svg { width: 14px; height: 14px; }
+.ready-list li.done .ready-status { background: var(--success); border-color: var(--success); }
+.ready-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.ready-list .btn { flex: none; }
+.p-inline-icon svg, p > svg { display: inline-block; vertical-align: -3px; }

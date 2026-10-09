@@ -14,6 +14,7 @@ import PlanModal, { planSummary } from '../components/PlanModal'
 import StoryTimeline, { StoryPreview } from '../components/StoryTimeline'
 import Modal from '../components/Modal'
 import Icon from '../components/Icon'
+import ReadinessChecklist from '../components/ReadinessChecklist'
 import NotFound from './NotFound'
 
 function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
@@ -77,10 +78,11 @@ export default function TourPage({ tourId }: { tourId: string }) {
     // only when the query changes
   }, [planParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Drop ?plan= from the URL without scrolling, so "Set plan" can reopen the same show later.
+  const clearPlanParam = () => planParam && history.replaceState(null, '', `#/tour/${tourId}`)
+
   if (!tour || !artist) return <NotFound />
   const shows = store.shows.filter((s) => s.tourId === tour.id)
-  const user = store.user
-  const anyPlan = shows.some((s) => store.planFor(s.id))
 
   return (
     <div className="container page stack-lg">
@@ -103,38 +105,17 @@ export default function TourPage({ tourId }: { tourId: string }) {
         </ul>
       </section>
 
-      <section className="card surface stack" aria-labelledby="ready-h">
-        <div className="stack-sm">
-          <h2 id="ready-h" style={{ fontSize: 24 }}>Ready to buy?</h2>
-          <p className="muted small">Sort these out before the sale so nothing slows you down at the front of the queue.</p>
-        </div>
-        <ul className="checklist">
-          <li>
-            <span className={`check ${user ? 'ok' : ''}`}>{user && <Icon name="check" />}</span>
-            {user ? <span>Logged in as <b>{user.name}</b></span> : <span>Not logged in yet. <button className="link-btn" onClick={() => store.openLogin('login')}>Log in</button></span>}
-          </li>
-          <li>
-            <span className={`check ${anyPlan ? 'ok' : ''}`}>{anyPlan && <Icon name="check" />}</span>
-            <span>{anyPlan ? 'Ticket plan set' : 'Set your ticket plan for the show you want'}</span>
-          </li>
-          <li>
-            <span className={`check ${user?.paymentSaved ? 'ok' : ''}`}>{user?.paymentSaved && <Icon name="check" />}</span>
-            <label className="checkbox" style={{ alignItems: 'center' }}>
-              <input type="checkbox" checked={!!user?.paymentSaved} disabled={!user} onChange={(e) => store.setPaymentSaved(e.target.checked)} />
-              <span>Payment method saved <span className="small muted">(demo: no card needed)</span></span>
-            </label>
-          </li>
-          <li>
-            <span className="check"><Icon name="users" /></span>
-            <span>
-              Going with friends? <button className="link-btn" onClick={() => {
-                void navigator.clipboard?.writeText(`${location.origin}${location.pathname}#/tour/${tour.id}`).catch(() => {})
-                setCopied(true)
-                store.toast('Squad link copied. Friends who join are seated with you if your plan allows.')
-              }}>{copied ? 'Squad link copied ✓' : 'Copy a squad invite link'}</button> <span className="small muted">(optional)</span>
-            </span>
-          </li>
-        </ul>
+      <section className="card surface stack">
+        <p className="muted small">Sort these out before the sale so nothing slows you down at the front of the queue.</p>
+        <ReadinessChecklist tourId={tour.id} />
+        <p className="small">
+          <Icon name="users" size={16} /> Going with friends?{' '}
+          <button className="link-btn" onClick={() => {
+            void navigator.clipboard?.writeText(`${location.origin}${location.pathname}#/tour/${tour.id}`).catch(() => {})
+            setCopied(true)
+            store.toast('Squad link copied. Friends who join are seated with you if your plan allows.')
+          }}>{copied ? 'Squad link copied ✓' : 'Copy a squad invite link'}</button> <span className="muted">(optional)</span>
+        </p>
       </section>
 
       <StoryPreview artist={artist} onExplore={() => setStoryOpen(true)} />
@@ -142,9 +123,10 @@ export default function TourPage({ tourId }: { tourId: string }) {
       {planShow && (
         <PlanModal
           show={planShow}
-          onClose={() => setPlanShow(null)}
+          onClose={() => { setPlanShow(null); clearPlanParam() }}
           onSaved={(plan) => {
             setPlanShow(null)
+            clearPlanParam()
             store.toast(`Plan saved: ${planSummary(plan, store.arenaOf(planShow).sections)}`)
             if (then && planParam === planShow.id) navigate(showPath(planShow, then))
           }}

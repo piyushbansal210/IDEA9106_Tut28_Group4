@@ -258,6 +258,10 @@ function QueueGate({ showId }: { showId: string }) {
   useEffect(() => {
     if (tooEarly) navigate(showPath(show, 'waiting'), { keepQuery: true })
   }, [tooEarly, show])
+  // Arriving without a plan (e.g. straight after logging in at the gate) opens the plan sheet, then returns here.
+  useEffect(() => {
+    if (!plan) navigate(`/tour/${show.tourId}?plan=${show.id}&then=queue`)
+  }, [plan, show])
 
   if (!plan) {
     return (
