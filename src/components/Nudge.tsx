@@ -4,6 +4,11 @@ import { usePresale } from '../presale'
 import { readStored, writeStored } from '../storage'
 import { QUESTION_SECONDS } from '../streak'
 import { chime } from '../audio'
+import { useRoute } from '../router'
+
+// No trivia nudges while a fan is queueing or checking out.
+const FOCUS_PAGES = ['queue', 'seats']
+const useFocusPage = () => FOCUS_PAGES.includes(useRoute().parts[4] ?? '')
 
 const minutes = (hhmm: string) => {
   const [h, m] = hhmm.split(':').map(Number)
@@ -38,13 +43,14 @@ export default function Nudge() {
   const gaps = useReadinessGaps()
   const showId = presale.nudgeFor
   const show = store.findShow(showId ?? undefined)
+  const focusPage = useFocusPage()
 
   useEffect(() => {
-    if (show) chime()
-  }, [show])
+    if (show && !focusPage) chime()
+  }, [show]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Never on top of the question itself.
-  if (!show || !showId || presale.triviaFor) return null
+  if (!show || !showId || presale.triviaFor || focusPage) return null
   const view = presale.streakFor(showId)
   const artist = store.artistOf(store.tourOf(show))
   const city = store.arenaOf(show).city
@@ -74,9 +80,10 @@ export function NudgeScheduler() {
   const store = useStore()
   const presale = usePresale()
   const user = store.user
+  const focusPage = useFocusPage()
 
   useEffect(() => {
-    if (!user) return
+    if (!user || focusPage) return
     const due = presale.myRegistrations.find((r) => {
       const show = store.findShow(r.showId)
       if (!r.push || !show) return false
@@ -92,7 +99,7 @@ export function NudgeScheduler() {
       presale.sendNudge(due.showId, true)
     }, 3000)
     return () => clearTimeout(t)
-  }, [user?.username, presale.demoDaysUntil]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.username, presale.demoDaysUntil, focusPage]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null
 }
