@@ -18,6 +18,21 @@ npm test        # streak rules, trivia bank, colour contrast and email safety (n
 
 Open http://localhost:5173.
 
+## Shared online version (GitHub Pages)
+
+**https://piyushbansal210.github.io/IDEA9106_Tut28_Group4/**
+
+Every push to `anu-aj` runs `.github/workflows/deploy-pages.yml`: it runs the tests, builds the app and publishes
+`dist/` to the `gh-pages` branch. One-time setup by a repo admin: **Settings → Pages → Build and deployment →
+Source: Deploy from a branch → `gh-pages` / `(root)` → Save**. The workflow can also be run by hand from the
+**Actions** tab ("Deploy to GitHub Pages" → Run workflow).
+
+Everyone can log in with the demo accounts below. QuickSeat has no backend, so each browser keeps its own data:
+accounts you sign up, bookings, plans and streaks stay on your device and aren't shared with teammates. Use
+**Admin → Reset demo data** to start fresh.
+
+To test the production build locally: `npm run build`, then `npx vite preview` and open the printed URL.
+
 ## Demo accounts
 
 | Role     | Username | Password    |

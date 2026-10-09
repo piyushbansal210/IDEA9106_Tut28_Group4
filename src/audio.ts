@@ -242,7 +242,7 @@ export function notify(title: string, body: string) {
   duck()
   chime()
   if (prefs.notify && 'Notification' in window && Notification.permission === 'granted' && document.hidden) {
-    new Notification(title, { body, icon: '/favicon.svg' })
+    new Notification(title, { body, icon: `${import.meta.env.BASE_URL}favicon.svg` })
   }
 }
 

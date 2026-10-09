@@ -120,7 +120,7 @@ function Admin() {
         <section key={tour.id} className="card stack">
           <div className="form-grid">
             <label className="field">Tour name<input value={tour.name} onChange={(e) => store.updateTour(tour.id, { name: e.target.value })} /></label>
-            <label className="field">Poster image URL<input placeholder={`/artists/${tour.artistId}.jpg`} value={tour.posterUrl ?? ''} onChange={(e) => store.updateTour(tour.id, { posterUrl: e.target.value || undefined })} /><span className="hint">Leave empty to use the generated poster.</span></label>
+            <label className="field">Poster image URL<input placeholder={`artists/${tour.artistId}.jpg`} value={tour.posterUrl ?? ''} onChange={(e) => store.updateTour(tour.id, { posterUrl: e.target.value || undefined })} /><span className="hint">Leave empty to use the generated poster.</span></label>
             <label className="field">Tagline<input value={tour.tagline} onChange={(e) => store.updateTour(tour.id, { tagline: e.target.value })} /></label>
           </div>
           <div className="table-wrap">
