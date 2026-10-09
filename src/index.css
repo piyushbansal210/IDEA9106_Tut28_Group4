@@ -423,3 +423,45 @@ table.data th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06
 @media (max-width: 560px) {
   .record-btn, .record-btn svg { width: 56px; height: 56px; }
 }
+
+/* ===== Queue track (music staff with your note) ===== */
+.qtrack { display: flex; align-items: center; gap: 12px; width: 100%; }
+.qtrack-staff {
+  position: relative; flex: 1; height: 44px; margin-top: 22px;
+  background: repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px 9px);
+  background-size: 100% 37px; background-repeat: no-repeat; background-position: 0 4px;
+  color: var(--accent);
+}
+.qtrack-fill { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, transparent, var(--accent-soft)); border-radius: 4px; transition: width 900ms linear; }
+.qtrack-other { position: absolute; width: 16px; height: 16px; color: var(--ink-muted); opacity: 0.35; transform: translateX(-50%); transition: opacity 400ms; }
+.qtrack-other.passed { opacity: 0.08; }
+.qtrack-you { position: absolute; bottom: 6px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; transition: left 900ms linear; z-index: 1; }
+.qtrack-hop { display: block; width: 30px; height: 30px; animation: hop 0.9s ease-in-out infinite; filter: drop-shadow(0 3px 4px var(--accent-mid)); }
+.qtrack-hop svg { width: 100%; height: 100%; color: var(--accent); }
+.qtrack-label { position: absolute; top: -24px; background: var(--accent); color: var(--accent-fg); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.qtrack-front { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 600; color: var(--ink); margin-top: 22px; }
+@keyframes hop { 0%, 100% { transform: translateY(0) rotate(-6deg); } 50% { transform: translateY(-7px) rotate(6deg); } }
+.qtrack-sm .qtrack-staff { height: 30px; margin-top: 4px; background-size: 100% 25px; background: repeating-linear-gradient(to bottom, var(--border) 0 1px, transparent 1px 6px) 0 3px / 100% 25px no-repeat; }
+.qtrack-sm .qtrack-other { width: 11px; height: 11px; }
+.qtrack-sm .qtrack-hop { width: 22px; height: 22px; }
+.qtrack-sm .qtrack-you { bottom: 3px; }
+.qtrack-sm .qtrack-front { margin-top: 4px; }
+
+/* ===== Floating queue tracker ===== */
+.qfloat {
+  position: fixed; top: 76px; left: 50%; transform: translateX(-50%); z-index: 35;
+  width: min(680px, calc(100vw - 32px)); background: var(--bg); border: 1px solid var(--border); border-radius: 16px;
+  box-shadow: var(--shadow-lg); padding: 10px 12px 10px 18px;
+  display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: center;
+  animation: drop 220ms ease;
+}
+.qfloat-count { display: flex; flex-direction: column; line-height: 1.1; }
+.qfloat-count b { font-size: 22px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.qfloat-count span { font-size: 12px; color: var(--ink-muted); }
+@keyframes drop { from { opacity: 0; transform: translate(-50%, -12px); } }
+.qfloat-on .sticky-alert { top: 152px; }
+@media (max-width: 600px) {
+  .qfloat { grid-template-columns: 1fr auto; gap: 4px 12px; padding: 10px 12px; }
+  .qfloat .qtrack { grid-column: 1 / -1; grid-row: 2; }
+  .qfloat-on .sticky-alert { top: 176px; }
+}

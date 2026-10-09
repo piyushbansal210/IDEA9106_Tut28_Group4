@@ -5,7 +5,7 @@ import { showPath } from '../sale'
 import { formatNumber, money } from '../seats'
 import { notify, useRecordPlayerHost } from '../audio'
 import { setArtistOverride } from '../theme'
-import { createQueue, getQueue, leaveQueue, peekQueue, summarise, type QueueAlert, type QueueStore, type Storyline } from '../queue/simulator'
+import { createQueue, getQueue, leaveQueue, peekQueue, summarise, type QueueAlert, type QueueState, type QueueStore, type Storyline } from '../queue/simulator'
 import type { Show, TicketPlan } from '../types'
 import QueueChart, { PlanTable } from '../components/QueueChart'
 import { SectionBadge } from '../components/StatusBadge'
@@ -13,6 +13,7 @@ import StoryTimeline from '../components/StoryTimeline'
 import Modal from '../components/Modal'
 import Icon from '../components/Icon'
 import Countdown from '../components/Countdown'
+import QueueTrack from '../components/QueueTrack'
 import { AlertSettings, LoginGate, ShowHeader, useDocumentTitle } from './shared'
 import NotFound from './NotFound'
 
@@ -75,6 +76,31 @@ function DemoPanel({ queue, onRestart }: { queue: QueueStore; onRestart: (s: Sto
   )
 }
 
+// Keeps your place in view: slides in under the navbar once the big counter scrolls away.
+function FloatingTracker({ state, onSeats }: { state: QueueState; onSeats: () => void }) {
+  const summary = summarise(state)
+  const yourTurn = state.phase === 'your-turn'
+  return (
+    <aside className="qfloat" aria-label="Your place in the queue">
+      <div className="qfloat-count">
+        {yourTurn ? <b>It's your turn</b> : <b>{formatNumber(state.peopleAhead)}</b>}
+        <span>{yourTurn ? 'Your seats are waiting' : 'people ahead of you'}</span>
+      </div>
+      <QueueTrack progress={state.progress} compact />
+      {yourTurn ? (
+        <button className="btn btn-primary btn-sm" onClick={onSeats}>Pick seats</button>
+      ) : (
+        <div className="row" style={{ gap: 4, flexWrap: 'nowrap' }}>
+          <SectionBadge status={summary.status} quantity={state.plan.quantity} />
+          <button className="icon-btn" style={{ width: 36, height: 36 }} aria-label="Back to the top of the queue page" onClick={() => window.scrollTo({ top: 0 })}>
+            <Icon name="up" size={18} />
+          </button>
+        </div>
+      )}
+    </aside>
+  )
+}
+
 function LiveQueue({ show, plan }: { show: Show; plan: TicketPlan }) {
   const store = useStore()
   const tour = store.tourOf(show)
@@ -130,6 +156,23 @@ function LiveQueue({ show, plan }: { show: Show; plan: TicketPlan }) {
 
   const yourTurn = state.phase === 'your-turn'
   const active = state.sections[state.activeIndex]
+  const goToSeats = () => active && navigate(`${showPath(show, 'seats')}?section=${active.sectionId}`)
+
+  // Show the floating tracker only while the main counter is out of view.
+  const counterRef = useRef<HTMLElement>(null)
+  const [counterVisible, setCounterVisible] = useState(true)
+  useEffect(() => {
+    const el = counterRef.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setCounterVisible(e.isIntersecting), { rootMargin: '-72px 0px 0px 0px' })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [state.phase === 'assigned', version]) // eslint-disable-line react-hooks/exhaustive-deps
+  const floating = !counterVisible && state.phase !== 'assigned' && state.phase !== 'done'
+  useEffect(() => {
+    document.body.classList.toggle('qfloat-on', floating)
+    return () => document.body.classList.remove('qfloat-on')
+  }, [floating])
 
   return (
     <div className="container page narrow stack-lg" key={version}>
@@ -142,7 +185,7 @@ function LiveQueue({ show, plan }: { show: Show; plan: TicketPlan }) {
           <p className="muted">Your place is random and fair. Refreshing won't change it.</p>
         </section>
       ) : (
-        <section className="stack" aria-labelledby="q-h">
+        <section className="stack" aria-labelledby="q-h" ref={counterRef}>
           {yourTurn ? (
             <h1 id="q-h" style={{ fontSize: 'clamp(40px, 7vw, 56px)', fontWeight: 600 }}>It's your turn</h1>
           ) : (
@@ -151,13 +194,14 @@ function LiveQueue({ show, plan }: { show: Show; plan: TicketPlan }) {
               <span style={{ fontSize: 18, fontWeight: 400 }} className="muted">people ahead of you</span>
             </h1>
           )}
+          {!yourTurn && <QueueTrack progress={state.progress} />}
           <div className="row" style={{ gap: 10 }}>
             <SectionBadge status={summary.status} quantity={plan.quantity} />
             <span>{summary.sentence}</span>
           </div>
           {yourTurn && active && (
             <div className="row">
-              <button className="btn btn-primary btn-lg" data-autofocus onClick={() => navigate(`${showPath(show, 'seats')}?section=${active.sectionId}`)}>
+              <button className="btn btn-primary btn-lg" data-autofocus onClick={goToSeats}>
                 Pick your seats in {active.name} <Icon name="arrowRight" size={18} />
               </button>
             </div>
@@ -165,6 +209,7 @@ function LiveQueue({ show, plan }: { show: Show; plan: TicketPlan }) {
         </section>
       )}
 
+      {floating && <FloatingTracker state={state} onSeats={goToSeats} />}
       {latest && <AlertBox alert={latest} sticky />}
       {state.alerts.length > 1 && (
         <details>

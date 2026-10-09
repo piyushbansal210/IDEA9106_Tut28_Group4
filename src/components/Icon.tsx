@@ -10,6 +10,7 @@ const paths = {
   x: <path d="M6 6l12 12M18 6 6 18" />,
   left: <path d="m15 5-7 7 7 7" />,
   right: <path d="m9 5 7 7-7 7" />,
+  up: <path d="m5 15 7-7 7 7" />,
   menu: <path d="M4 7h16M4 12h16M4 17h16" />,
   bell: <><path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15Z" /><path d="M10 20.5a2 2 0 0 0 4 0" /></>,
   volume: <><path d="M4 9.5h3.5L12 6v12l-4.5-3.5H4Z" /><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" /></>,
