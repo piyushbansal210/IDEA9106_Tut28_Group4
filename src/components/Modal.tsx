@@ -7,12 +7,14 @@ interface Props {
   children: ReactNode
   wide?: boolean
   hideTitle?: boolean
+  // Full-screen sheet on phones (centred dialog on larger screens).
+  sheet?: boolean
 }
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, iframe, [tabindex]:not([tabindex="-1"])'
 
 // Accessible dialog: traps focus, closes on Esc, and returns focus to whatever opened it.
-export default function Modal({ title, onClose, children, wide, hideTitle }: Props) {
+export default function Modal({ title, onClose, children, wide, hideTitle, sheet }: Props) {
   const id = useId()
   const ref = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
@@ -53,7 +55,7 @@ export default function Modal({ title, onClose, children, wide, hideTitle }: Pro
 
   return (
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose?.()}>
-      <div ref={ref} className={`modal ${wide ? 'modal-wide' : ''}`} role="dialog" aria-modal="true" aria-labelledby={id}>
+      <div ref={ref} className={`modal ${wide ? 'modal-wide' : ''} ${sheet ? 'modal-sheet' : ''}`} role="dialog" aria-modal="true" aria-labelledby={id}>
         {onClose && (
           <button className="icon-btn modal-close" onClick={onClose} aria-label="Close">
             <Icon name="x" size={22} />

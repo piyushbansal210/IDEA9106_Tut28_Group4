@@ -37,8 +37,11 @@ interface Presale {
 
   streakFor: (showId: string) => StreakView
   startQuestion: (showId: string) => PendingQuestion | null
-  submitAnswer: (showId: string, displayIndex: number | null) => StreakDay | null
+  // `at` is when the fan clicked, so a short reveal animation can't push an in-time answer over the limit.
+  submitAnswer: (showId: string, displayIndex: number | null, at?: number) => StreakDay | null
   fillSampleHistory: (showId: string) => void
+  // Demo only: move a running question's clock forward.
+  fastForward: (showId: string, ms: number) => void
   resetStreak: (showId: string) => void
 
   preRegisterFor: string | null
@@ -50,7 +53,8 @@ interface Presale {
   openTrivia: (showId: string, auto?: DemoAnswer) => void
   closeTrivia: () => void
   nudgeFor: string | null
-  sendNudge: (showId: string) => void
+  // `ifIdle`: only show it if no other nudge or presale pop-up is open (used by the automatic daily nudge).
+  sendNudge: (showId: string, ifIdle?: boolean) => void
   dismissNudge: () => void
   resetPresale: () => void
 }
@@ -120,6 +124,8 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
   const [triviaFor, setTriviaFor] = useState<string | null>(null)
   const [triviaAuto, setTriviaAuto] = useState<DemoAnswer | null>(null)
   const [nudgeFor, setNudgeFor] = useState<string | null>(null)
+  const nudgeRef = useRef(nudgeFor)
+  nudgeRef.current = nudgeFor
 
   // The old reminder flags have been migrated into registrations.
   useEffect(() => {
@@ -189,14 +195,14 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
       saveRecord(showId, { ...view.record, pending })
       return pending
     },
-    submitAnswer: (showId, displayIndex) => {
+    submitAnswer: (showId, displayIndex, at = Date.now()) => {
       const show = showById(showId)
       const raw = streaks[key(showId)]
       const pending = raw?.pending
       if (!show || !pending) return null
       const question = triviaBank[store.tourOf(show).artistId].find((q) => q.id === pending.questionId)
       if (!question) return null
-      const msTaken = Date.now() - pending.shownAt
+      const msTaken = at - pending.shownAt
       const day: StreakDay = { dayIndex: pending.dayIndex, result: scoreAnswer(question, pending.order, displayIndex, msTaken), questionId: question.id, answeredAt: new Date().toISOString(), msTaken: Math.min(msTaken, 20_000) }
       saveRecord(showId, { days: { ...raw.days, [pending.dayIndex]: raw.days[pending.dayIndex] ?? day } })
       return day
@@ -210,6 +216,11 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
       setRegistrations((list) => list.map((r) => (r.showId === showId && r.username === u.username ? { ...r, startDay: 1 } : r)))
     },
     resetStreak: (showId) => saveRecord(showId, { days: {} }),
+    fastForward: (showId, ms) =>
+      setStreaks((all) => {
+        const r = all[key(showId)]
+        return r?.pending ? { ...all, [key(showId)]: { ...r, pending: { ...r.pending, shownAt: r.pending.shownAt - ms } } } : all
+      }),
 
     preRegisterFor,
     openPreRegister: (showId) => store.requireLogin('Log in to pre-register. Your registration and streak are saved to your account.', () => setPreRegisterFor(showId)),
@@ -226,7 +237,10 @@ export function PresaleProvider({ children }: { children: ReactNode }) {
       setTriviaAuto(null)
     },
     nudgeFor,
-    sendNudge: setNudgeFor,
+    sendNudge: (showId, ifIdle) => {
+      if (ifIdle && (nudgeRef.current || triviaFor || preRegisterFor)) return
+      setNudgeFor(showId)
+    },
     dismissNudge: () => setNudgeFor(null),
     resetPresale: () => {
       setRegistrations(initialRegistrations())

@@ -6,6 +6,10 @@ import Footer from './components/Footer'
 import LoginModal from './components/LoginModal'
 import RecordPlayer from './components/RecordPlayer'
 import Toasts from './components/Toasts'
+import PreRegisterModal from './components/PreRegisterModal'
+import TriviaModal from './components/TriviaModal'
+import Nudge, { NudgeScheduler } from './components/Nudge'
+import PresaleHub from './pages/PresaleHub'
 import Landing from './pages/Landing'
 import TourPage from './pages/TourPage'
 import WaitingRoom from './pages/WaitingRoom'
@@ -27,6 +31,7 @@ function Page() {
   if (a === 'help' && !id) return <HelpPage />
   if (a === 'tour' && id && !b) return <TourPage key={id} tourId={id} />
   if (a === 'tour' && b === 'show' && showId) {
+    if (page === 'hub') return <PresaleHub showId={showId} />
     if (page === 'waiting') return <WaitingRoom showId={showId} />
     if (page === 'queue') return <QueuePage showId={showId} />
     if (page === 'seats') return <SeatsPage showId={showId} />
@@ -47,6 +52,10 @@ export default function App() {
       <Footer />
       <LoginModal />
       <RecordPlayer />
+      <PreRegisterModal />
+      <TriviaModal />
+      <Nudge />
+      <NudgeScheduler />
       <Toasts />
       </PresaleProvider>
     </StoreProvider>

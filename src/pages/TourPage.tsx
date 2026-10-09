@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
-import { navigate, useRoute } from '../router'
+import { usePresale } from '../presale'
+import { href, navigate, useRoute } from '../router'
 import { countdownTarget, showPath } from '../sale'
 import { formatShowDate, money, priceRange } from '../seats'
 import { setArtistOverride } from '../theme'
@@ -27,6 +28,8 @@ function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
   const plan = store.planFor(show.id)
   const canPlan = show.hasQueue && status !== 'sold-out' && status !== 'on-sale'
   const label = useActionLabel()
+  const presale = usePresale()
+  const registration = presale.registrationFor(show.id)
 
   return (
     <li className="show-row">
@@ -39,6 +42,7 @@ function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
         <StatusBadge status={status} />
         {target && <span className="small muted">{status === 'waiting-room' ? 'Queue opens in' : 'On sale in'} <Countdown to={target} /></span>}
         {plan && canPlan && <span className="small" style={{ color: 'var(--success)' }}><Icon name="check" size={14} /> Plan set</span>}
+        {registration && <a className="small" href={href(showPath(show, 'hub'))}>Pre-registered · {presale.streakFor(show.id).length}-day streak</a>}
       </div>
       <div className="show-actions">
         {canPlan && (
