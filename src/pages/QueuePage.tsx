@@ -179,7 +179,7 @@ function LiveQueue({ show, plan }: { show: Show; plan: TicketPlan }) {
       <ShowHeader show={show} right={<span className="plan-pill">Your plan: <b>{plan.quantity} {plan.quantity === 1 ? 'ticket' : 'tickets together'}, up to {money(plan.maxPricePerTicket)} each</b></span>} />
 
       {state.phase === 'assigned' ? (
-        <section className="card stack" style={{ textAlign: 'center', padding: 48 }} aria-live="polite">
+        <section className="card stack" style={{ textAlign: 'center', alignItems: 'center', padding: 48 }} aria-live="polite">
           <Icon name="shield" size={40} />
           <h1 style={{ fontSize: 28 }}>You're in the queue</h1>
           <p className="muted">Your place is random and fair. Refreshing won't change it.</p>

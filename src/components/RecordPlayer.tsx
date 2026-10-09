@@ -66,13 +66,13 @@ export default function RecordPlayer() {
 
       {music.expanded && (
         <section className="player-card" aria-label="Record player">
-          <div className="row between" style={{ alignItems: 'flex-start' }}>
-            <div style={{ minWidth: 0 }}>
+          <div className="row between" style={{ alignItems: 'flex-start', flexWrap: 'nowrap' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
               <div className="eyebrow">{music.spotifyOpen ? 'Spotify' : music.playing ? 'Now playing' : 'Paused'}</div>
               <strong style={{ display: 'block' }}>{music.spotifyOpen ? `${artist.name} on Spotify` : title}</strong>
               <span className="small muted">{artist.name} · {music.spotifyOpen ? 'previews, or full tracks if you\'re logged in to Spotify' : 'generated mood loop'}</span>
             </div>
-            <div className="row" style={{ gap: 0, flexWrap: 'nowrap' }}>
+            <div className="row" style={{ gap: 0, flexWrap: 'nowrap', flex: 'none', margin: '-8px -8px 0 0' }}>
               <button className="icon-btn" onClick={() => setMinimized(true)} aria-label="Minimise record player"><Icon name="minimize" size={20} /></button>
               <button className="icon-btn" onClick={() => setExpanded(false)} aria-label="Close player card"><Icon name="x" size={20} /></button>
             </div>
