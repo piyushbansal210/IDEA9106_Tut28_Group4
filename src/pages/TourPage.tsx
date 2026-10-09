@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { navigate, useRoute } from '../router'
-import { countdownTarget, primaryAction, showPath } from '../sale'
+import { countdownTarget, showPath } from '../sale'
 import { formatShowDate, money, priceRange } from '../seats'
 import { setArtistOverride } from '../theme'
 import { useRecordPlayerHost } from '../audio'
-import { useShowAction } from '../actions'
+import { useActionLabel, useShowAction } from '../actions'
 import type { Show } from '../types'
 import Poster from '../components/Poster'
 import StatusBadge from '../components/StatusBadge'
@@ -26,7 +26,7 @@ function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
   const [lo, hi] = priceRange(arena)
   const plan = store.planFor(show.id)
   const canPlan = show.hasQueue && status !== 'sold-out' && status !== 'on-sale'
-  const reminded = store.hasReminder(show.id)
+  const label = useActionLabel()
 
   return (
     <li className="show-row">
@@ -47,7 +47,7 @@ function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
           </button>
         )}
         <button className="btn btn-primary" onClick={() => act(show)}>
-          {(status === 'presale-soon' || status === 'announced') && reminded ? 'Reminder set ✓' : primaryAction[status]}
+          {label(show)}
         </button>
       </div>
     </li>

@@ -17,8 +17,8 @@ export function getShowStatus(show: Show, now: number): SaleStatus {
 
 // The one action each status leads to. Labels are shared by cards, hero and tour page.
 export const primaryAction: Record<SaleStatus, string> = {
-  announced: 'Remind me',
-  'presale-soon': 'Remind me',
+  announced: 'Pre-register',
+  'presale-soon': 'Pre-register',
   'waiting-room': 'Join waiting room',
   'queue-open': 'Join queue',
   'on-sale': 'Buy tickets',
@@ -30,5 +30,5 @@ export function countdownTarget(show: Show, status: SaleStatus): string | null {
   return status === 'announced' || status === 'presale-soon' || status === 'waiting-room' ? show.saleOpensAt : null
 }
 
-export const showPath = (show: Show, page: 'waiting' | 'queue' | 'seats' | 'outcome') =>
+export const showPath = (show: Show, page: 'hub' | 'waiting' | 'queue' | 'seats' | 'outcome') =>
   `/tour/${show.tourId}/show/${show.id}/${page}`

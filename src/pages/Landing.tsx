@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { cities } from '../data'
 import { href } from '../router'
-import { countdownTarget, primaryAction } from '../sale'
+import { countdownTarget } from '../sale'
 import { formatShortDate, formatShowDate } from '../seats'
 import { readStored, writeStored } from '../storage'
-import { useFeaturedShow, useShowAction } from '../actions'
+import { useActionLabel, useFeaturedShow, useShowAction } from '../actions'
 import type { Show, Tour } from '../types'
 import Poster from '../components/Poster'
 import StatusBadge from '../components/StatusBadge'
@@ -39,6 +39,7 @@ function Hero({ tours }: { tours: Tour[] }) {
   const store = useStore()
   const featured = useFeaturedShow()
   const act = useShowAction()
+  const label = useActionLabel()
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const reduced = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -78,7 +79,7 @@ function Hero({ tours }: { tours: Tour[] }) {
                   </div>
                 )}
                 <div className="row">
-                  <button className="btn btn-primary btn-lg" onClick={() => act(show)}>{status === 'presale-soon' || status === 'announced' ? (store.hasReminder(show.id) ? 'Reminder set ✓' : primaryAction[status]) : primaryAction[status]}</button>
+                  <button className="btn btn-primary btn-lg" onClick={() => act(show)}>{label(show)}</button>
                   <a className="btn btn-ghost" href={href(`/tour/${tour.id}`)}>All dates <Icon name="arrowRight" size={16} /></a>
                 </div>
               </>

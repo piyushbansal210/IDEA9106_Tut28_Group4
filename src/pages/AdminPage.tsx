@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { useStore } from '../store'
+import { usePresale } from '../presale'
 import { arenas } from '../data'
 import { money } from '../seats'
 import type { Show } from '../types'
@@ -42,6 +43,7 @@ function ShowEditor({ show }: { show: Show }) {
 
 function Admin() {
   const store = useStore()
+  const presale = usePresale()
   useDocumentTitle('Admin')
   const [form, setForm] = useState({ tourId: store.tours[0]?.id ?? '', arenaId: arenas[0].id, date: '', saleOpensAt: '', ticketLimit: 12000, hasQueue: true })
 
@@ -62,7 +64,7 @@ function Admin() {
     <div className="container page stack-lg">
       <div className="row between">
         <h1>Admin dashboard</h1>
-        <button className="btn btn-secondary" onClick={() => confirm('Reset all demo data? Bookings, plans and edits are cleared.') && store.resetDemo()}>Reset demo data</button>
+        <button className="btn btn-secondary" onClick={() => confirm('Reset all demo data? Bookings, plans and edits are cleared.') && (store.resetDemo(), presale.resetPresale())}>Reset demo data</button>
       </div>
 
       <section className="stats">

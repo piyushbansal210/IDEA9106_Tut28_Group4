@@ -1,4 +1,5 @@
 import { StoreProvider } from './store'
+import { PresaleProvider } from './presale'
 import { useRoute } from './router'
 import Navbar from './components/Navbar'
 import Footer from './components/Footer'
@@ -37,6 +38,7 @@ function Page() {
 export default function App() {
   return (
     <StoreProvider>
+      <PresaleProvider>
       <a className="visually-hidden" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus() }}>Skip to content</a>
       <Navbar />
       <main id="main" tabIndex={-1}>
@@ -46,6 +48,7 @@ export default function App() {
       <LoginModal />
       <RecordPlayer />
       <Toasts />
+      </PresaleProvider>
     </StoreProvider>
   )
 }

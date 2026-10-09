@@ -85,3 +85,14 @@ export function themeTokens(swatch: string) {
     '--focus': bg,
   }
 }
+
+// Presale streak colours. Semantic, fixed across themes (mirrored as --streak-* in index.css).
+// "Tried" is a light, saturated amber so it stays distinct from the brand oranges (Orange Rust, Honey Ginger)
+// by lightness and from Sand/Sandstone by saturation; every cell also carries an icon and a label.
+export const STREAK_COLOURS = {
+  correct: { fill: '#1F7A46', icon: '#FFFFFF', border: '#1F7A46' },
+  tried: { fill: '#E8A33D', icon: '#1A1A1A', border: '#9A5B0B' },
+  missed: { fill: '#E6E0D5', icon: '#4A453C', border: '#8A8173' },
+} as const
+
+export const saturation = (hex: string) => rgbToHsl(hexToRgb(hex))[1]

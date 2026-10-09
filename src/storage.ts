@@ -1,8 +1,12 @@
 import { useEffect, useState } from 'react'
 
 // useState that is saved to localStorage (or sessionStorage) so data survives a page refresh.
-export function usePersistentState<T>(key: string, initial: T, session = false) {
-  const [value, setValue] = useState<T>(() => readStored(key, initial, session))
+// `initial` may be a function, computed only when nothing is stored yet (used for one-off migrations and seeds).
+export function usePersistentState<T>(key: string, initial: T | (() => T), session = false) {
+  const [value, setValue] = useState<T>(() => {
+    const stored = readStored<T | undefined>(key, undefined, session)
+    return stored !== undefined ? stored : initial instanceof Function ? initial() : initial
+  })
 
   useEffect(() => {
     writeStored(key, value, session)

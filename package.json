@@ -11,7 +11,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "dev:full": "concurrently -k -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:web\""
+    "dev:full": "concurrently -k -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:web\"",
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "express": "^5.2.1",
