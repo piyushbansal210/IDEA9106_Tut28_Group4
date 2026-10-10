@@ -1,140 +1,96 @@
-import { useMemo } from 'react'
-import type { Arena } from '../types'
-import { makeSeatId, money, SECTION_COLORS } from '../seats'
+import type { Arena, Section } from '../types'
+import { makeSeatId, money } from '../seats'
+
+export type BlockState = 'available' | 'nearly' | 'gone'
 
 interface Props {
   arena: Arena
-  taken: Set<string>
-  selected: string[]
-  onToggle: (seatId: string) => void
-  // When false, free seats can't be picked (e.g. the show's ticket limit is reached).
-  canSelectMore: boolean
-}
-
-// Layout constants (SVG units). Rows curve around the stage, each section further back.
-const FIRST_ROW_RADIUS = 100
-const ROW_GAP = 17
-const SECTION_GAP = 26
-const SEAT_GAP = 18
-const SEAT_RADIUS = 6.2
-
-interface Seat {
-  id: string
-  x: number
-  y: number
   label: string
-  color: string
+  rankedIds?: string[]
+  activeId?: string
+  stateOf?: (section: Section) => BlockState
+  disabledReason?: (section: Section) => string | null
+  onSelect?: (section: Section) => void
+  pressed?: (section: Section) => boolean
 }
 
-function layout(arena: Arena) {
-  const seats: Seat[] = []
-  const bands: { path: string; color: string; name: string; labelY: number }[] = []
-  let radius = FIRST_ROW_RADIUS
-
-  arena.sections.forEach((section, i) => {
-    const color = SECTION_COLORS[i % SECTION_COLORS.length]
-    const inner = radius
-    let widest = 0
-    for (let r = 0; r < section.rows; r++) {
-      const step = SEAT_GAP / radius
-      const half = ((section.seatsPerRow - 1) * step) / 2
-      widest = Math.max(widest, half)
-      for (let s = 0; s < section.seatsPerRow; s++) {
-        const angle = -half + s * step
-        seats.push({
-          id: makeSeatId(section.id, r, s),
-          x: radius * Math.sin(angle),
-          y: radius * Math.cos(angle),
-          label: `${section.name} · Row ${String.fromCharCode(65 + r)} · Seat ${s + 1} · ${money(section.price)}`,
-          color,
-        })
-      }
-      radius += ROW_GAP
-    }
-    const outer = radius - ROW_GAP
-    bands.push({ path: annulus(inner - 11, outer + 11, widest + 0.06), color, name: section.name, labelY: outer + 11 })
-    radius += SECTION_GAP - ROW_GAP
-  })
-
-  const pad = 20
-  const xs = seats.map((s) => s.x)
-  const ys = seats.map((s) => s.y)
-  const minX = Math.min(...xs) - pad
-  const maxX = Math.max(...xs) + pad
-  const maxY = Math.max(...ys) + pad
-  const minY = -60 // room for the stage
-  return { seats, bands, viewBox: `${minX} ${minY} ${maxX - minX} ${maxY - minY}` }
-}
-
-// Ring segment centred on the stage, opening downwards, between two radii and ±halfAngle.
-function annulus(r1: number, r2: number, half: number) {
-  const pt = (r: number, a: number) => `${(r * Math.sin(a)).toFixed(1)} ${(r * Math.cos(a)).toFixed(1)}`
-  const large = half * 2 > Math.PI ? 1 : 0
-  return [
-    `M ${pt(r1, -half)}`,
-    `A ${r1} ${r1} 0 ${large} 0 ${pt(r1, half)}`,
-    `L ${pt(r2, half)}`,
-    `A ${r2} ${r2} 0 ${large} 1 ${pt(r2, -half)}`,
-    'Z',
-  ].join(' ')
-}
-
-export default function ArenaMap({ arena, taken, selected, onToggle, canSelectMore }: Props) {
-  const { seats, bands, viewBox } = useMemo(() => layout(arena), [arena])
-
+// Venue map: named blocks around the stage, with rank badges and sold-out / nearly-gone states.
+export default function ArenaMap({ arena, label, rankedIds = [], activeId, stateOf, disabledReason, onSelect, pressed }: Props) {
   return (
-    <div className="arena-map">
-      <svg viewBox={viewBox} role="group" aria-label={`Seat map for ${arena.name}`}>
-        <defs>
-          <radialGradient id="stage-glow" cx="50%" cy="0%" r="80%">
-            <stop offset="0%" stopColor="#ff3d8b" stopOpacity="0.45" />
-            <stop offset="100%" stopColor="#ff3d8b" stopOpacity="0" />
-          </radialGradient>
-          <linearGradient id="stage-fill" x1="0" x2="1">
-            <stop offset="0%" stopColor="#ff3d8b" />
-            <stop offset="100%" stopColor="#8b6cff" />
-          </linearGradient>
-        </defs>
-
-        <ellipse cx="0" cy="0" rx="260" ry="200" fill="url(#stage-glow)" />
-        {bands.map((b) => (
-          <path key={b.name} d={b.path} fill={b.color} fillOpacity="0.07" stroke={b.color} strokeOpacity="0.25" />
-        ))}
-
-        <path d="M -90 -44 L 90 -44 L 70 40 Q 0 62 -70 40 Z" fill="url(#stage-fill)" />
-        <text x="0" y="6" className="stage-label" textAnchor="middle">STAGE</text>
-
-        {seats.map((seat) => {
-          const isTaken = taken.has(seat.id)
-          const isSelected = selected.includes(seat.id)
-          const disabled = isTaken || (!isSelected && !canSelectMore)
-          const toggle = () => !disabled && onToggle(seat.id)
+    <div className="stack">
+      <div className="arena-map" role="group" aria-label={label}>
+        <div className="arena-stage" aria-hidden="true">STAGE</div>
+        {arena.sections.map((s) => {
+          const rank = rankedIds.indexOf(s.id) + 1
+          const state = stateOf?.(s) ?? 'available'
+          const reason = disabledReason?.(s) ?? (state === 'gone' ? 'Sold out' : null)
+          const desc = [s.name, money(s.price), s.kind === 'standing' ? 'standing' : 'seated', rank ? `your choice ${rank}` : '', reason ?? (state === 'nearly' ? 'nearly gone' : '')].filter(Boolean).join(', ')
           return (
-            <circle
-              key={seat.id}
-              cx={seat.x}
-              cy={seat.y}
-              r={SEAT_RADIUS}
-              className={`seat-dot${isTaken ? ' taken' : ''}${isSelected ? ' selected' : ''}${disabled ? ' disabled' : ''}`}
-              style={{ ['--seat' as string]: seat.color }}
-              role="checkbox"
-              aria-checked={isSelected}
-              aria-disabled={disabled}
-              aria-label={`${seat.label}${isTaken ? ' (taken)' : ''}`}
-              tabIndex={isTaken ? -1 : 0}
-              onClick={toggle}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  toggle()
-                }
-              }}
+            <button
+              key={s.id}
+              type="button"
+              className={`arena-block ${state === 'gone' ? 'gone' : state === 'nearly' ? 'nearly' : ''} ${activeId === s.id ? 'active' : ''}`}
+              style={{ gridArea: s.id }}
+              data-rank={rank || undefined}
+              aria-pressed={pressed ? pressed(s) : undefined}
+              aria-label={desc}
+              title={reason ?? undefined}
+              disabled={!onSelect || !!reason}
+              onClick={() => onSelect?.(s)}
             >
-              <title>{isTaken ? `${seat.label} (taken)` : seat.label}</title>
-            </circle>
+              {rank > 0 && <span className="rank-dot" aria-hidden="true">{rank}</span>}
+              <span>{s.name}</span>
+              <span className="price">{money(s.price)}{s.kind === 'standing' ? ' · standing' : ''}</span>
+            </button>
           )
         })}
-      </svg>
+      </div>
+      <div className="legend" aria-hidden="true">
+        <span><i /> available</span>
+        <span><i className="l-near" /> nearly gone</span>
+        <span><i className="l-gone" /> sold out / over budget</span>
+        {rankedIds.length > 0 && <span><i className="l-ranked" /> your ranked sections</span>}
+      </div>
+    </div>
+  )
+}
+
+interface SeatGridProps {
+  section: Section
+  taken: Set<string>
+  selected: string[]
+  onToggle: (id: string) => void
+}
+
+export function SeatGrid({ section, taken, selected, onToggle }: SeatGridProps) {
+  return (
+    <div className="seat-grid" role="group" aria-label={`${section.name} seats. Front row is A, closest to the stage.`}>
+      {Array.from({ length: section.rows }, (_, r) => {
+        const row = String.fromCharCode(65 + r)
+        return (
+          <div className="seat-row" key={r}>
+            <span className="row-label" aria-hidden="true">{row}</span>
+            {Array.from({ length: section.seatsPerRow }, (_, s) => {
+              const id = makeSeatId(section.id, r, s)
+              const isTaken = taken.has(id)
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="seat"
+                  disabled={isTaken}
+                  aria-pressed={selected.includes(id)}
+                  aria-label={`Row ${row}, seat ${s + 1}${isTaken ? ', taken' : ''}`}
+                  onClick={() => onToggle(id)}
+                >
+                  {s + 1}
+                </button>
+              )
+            })}
+            <span className="row-label" aria-hidden="true">{row}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }

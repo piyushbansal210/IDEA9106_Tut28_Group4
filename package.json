@@ -4,13 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:web\"",
+    "dev": "vite",
     "dev:web": "vite",
     "dev:server": "node --watch --disable-warning=ExperimentalWarning server/index.ts",
     "start:server": "node --disable-warning=ExperimentalWarning server/index.ts",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:full": "concurrently -k -n api,web -c blue,green \"npm:dev:server\" \"npm:dev:web\"",
+    "test": "node --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "express": "^5.2.1",

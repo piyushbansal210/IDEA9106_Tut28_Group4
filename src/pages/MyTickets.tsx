@@ -1,74 +1,68 @@
-import type { Store } from '../store'
-import { arenas } from '../data'
-import { dateParts, money, seatLabel } from '../seats'
-import { authHref, href } from '../router'
-import ArtistImage from '../components/ArtistImage'
+import { useStore } from '../store'
+import { href } from '../router'
+import { formatNumber, formatShowDate } from '../seats'
+import TicketCard from '../components/TicketCard'
+import { LoginGate, useDocumentTitle } from './shared'
 
-export default function MyTickets({ store }: { store: Store }) {
-  if (!store.user) {
-    return (
-      <div className="container block">
-        <div className="empty">
-          <a href={authHref('login', 'tickets')}>Log in</a> to see your tickets.
-        </div>
+function Tickets() {
+  const store = useStore()
+  useDocumentTitle('My tickets')
+  const mine = store.bookings.filter((b) => b.username === store.user?.username)
+  const withShow = mine.map((b) => ({ b, show: store.findShow(b.showId) })).filter((x) => x.show)
+  const upcoming = withShow.filter((x) => Date.parse(x.show!.date) >= store.now)
+  const past = withShow.filter((x) => Date.parse(x.show!.date) < store.now)
+  const waitlists = store.waitlists.filter((w) => w.username === store.user?.username)
+
+  const group = (title: string, list: typeof withShow) => (
+    <section className="stack" aria-labelledby={`h-${title}`}>
+      <h2 id={`h-${title}`} style={{ fontSize: 24 }}>{title}</h2>
+      <div className="ticket-list">
+        {list.flatMap(({ b }) => b.seats.map((seat) => <TicketCard key={b.id + seat} booking={b} seat={seat} />))}
       </div>
-    )
-  }
-
-  const bookings = store.bookings.filter((b) => b.username === store.user!.username)
-  const seatCount = bookings.reduce((n, b) => n + b.seats.length, 0)
-  const spent = bookings.reduce((n, b) => n + b.total, 0)
+    </section>
+  )
 
   return (
-    <section className="container block">
-      <div className="block-head">
-        <div>
-          <span className="eyebrow">Hi {store.user.name.split(' ')[0]}</span>
-          <h1>My tickets</h1>
-        </div>
-        {bookings.length > 0 && (
-          <span className="muted small">
-            {bookings.length} booking{bookings.length > 1 ? 's' : ''} · {seatCount} seat{seatCount > 1 ? 's' : ''} · {money(spent)}
-          </span>
-        )}
-      </div>
-
-      {bookings.length === 0 ? (
-        <div className="empty">
-          <p>You haven't booked anything yet.</p>
-          <a href={href()} className="btn primary">Find a show</a>
-        </div>
-      ) : (
-        <div className="tickets">
-          {bookings.map((b) => {
-            const c = store.concerts.find((x) => x.id === b.concertId)
-            const a = arenas.find((x) => x.id === c?.arenaId)
-            const artist = store.artists.find((x) => x.name === c?.artist)
-            const d = c && dateParts(c.date)
-            return (
-              <article key={b.id} className="ticket">
-                <ArtistImage name={c?.artist ?? '?'} src={artist?.imageUrl} className="ticket-img" />
-                <div className="ticket-main">
-                  <span className="tag">{c ? `${d!.weekday} ${d!.day} ${d!.month} ${d!.year}` : 'Cancelled'}</span>
-                  <h3>{c ? c.artist : 'Cancelled show'}</h3>
-                  {c && <span className="muted small">{c.title}</span>}
-                  {a && <span className="small">📍 {a.name}, {a.city}</span>}
-                  <div className="seat-chips">
-                    {b.seats.map((s) => <span key={s} className="seat-chip">{seatLabel(a, s)}</span>)}
-                  </div>
-                </div>
-                <div className="ticket-stub">
-                  <span className="tiny muted">ADMIT</span>
-                  <strong className="admit">{b.seats.length}</strong>
-                  <span className="barcode" aria-hidden />
-                  <span className="tiny muted mono">#{b.id.slice(0, 8).toUpperCase()}</span>
-                  <span className="small">{money(b.total)}</span>
-                </div>
-              </article>
-            )
-          })}
+    <div className="container page stack-lg">
+      <h1>My tickets</h1>
+      {!withShow.length && !waitlists.length && (
+        <div className="empty stack-sm">
+          <strong>No tickets yet.</strong>
+          <a className="link-btn" href={href('/')}>Browse tours →</a>
         </div>
       )}
-    </section>
+      {upcoming.length > 0 && group('Upcoming', upcoming)}
+      {past.length > 0 && group('Past', past)}
+      {waitlists.length > 0 && (
+        <section className="stack" aria-labelledby="h-wait">
+          <h2 id="h-wait" style={{ fontSize: 24 }}>Waitlists</h2>
+          <ul className="stack-sm" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {waitlists.map((w) => {
+              const show = store.findShow(w.showId)
+              if (!show) return null
+              const tour = store.tourOf(show)
+              const arena = store.arenaOf(show)
+              return (
+                <li key={w.id} className="card card-tight row between">
+                  <div className="stack-sm" style={{ gap: 2 }}>
+                    <strong>{store.artistOf(tour).name}: {tour.name}</strong>
+                    <span className="small muted">{arena.city} · {formatShowDate(show.date, arena.timeZone)}</span>
+                  </div>
+                  <span className="badge badge-info">Waitlist place {formatNumber(w.place)}</span>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+    </div>
+  )
+}
+
+export default function MyTickets() {
+  return (
+    <LoginGate reason="Log in to see your tickets.">
+      <Tickets />
+    </LoginGate>
   )
 }

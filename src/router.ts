@@ -1,36 +1,39 @@
-import { useEffect, useState } from 'react'
+import { useSyncExternalStore } from 'react'
 
-// Tiny hash router: "#/artists/BTS" -> ['artists', 'BTS'].
-const parse = () =>
-  window.location.hash
-    .replace(/^#\/?/, '')
-    .split('?')[0]
-    .split('/')
-    .filter(Boolean)
-    .map(decodeURIComponent)
-
-export function useRoute() {
-  const [route, setRoute] = useState(parse)
-  useEffect(() => {
-    const onChange = () => {
-      setRoute(parse())
-      window.scrollTo({ top: 0 })
-    }
-    window.addEventListener('hashchange', onChange)
-    return () => window.removeEventListener('hashchange', onChange)
-  }, [])
-  return route
+// Tiny hash router: "#/tour/eras-encore?demo=1" → { path: '/tour/eras-encore', parts: [...], query }.
+export interface Route {
+  path: string
+  parts: string[]
+  query: URLSearchParams
 }
 
-export const href = (...parts: string[]) => `#/${parts.map(encodeURIComponent).join('/')}`
-
-export const navigate = (...parts: string[]) => {
-  window.location.hash = href(...parts)
+const subscribe = (cb: () => void) => {
+  window.addEventListener('hashchange', cb)
+  return () => window.removeEventListener('hashchange', cb)
 }
 
-// Query string after the route, e.g. "#/login?next=/shows/c1".
-export const routeQuery = () => new URLSearchParams(window.location.hash.split('?')[1] ?? '')
+const getHash = () => window.location.hash
 
-// Link to the login/register page that returns to `next` (e.g. "shows/c1") afterwards.
-export const authHref = (mode: 'login' | 'register', next?: string) =>
-  `${href(mode)}${next ? `?next=${encodeURIComponent(next)}` : ''}`
+export function parseRoute(hash: string): Route {
+  const raw = hash.replace(/^#/, '') || '/'
+  const [path, search = ''] = raw.split('?')
+  return { path, parts: path.split('/').filter(Boolean), query: new URLSearchParams(search) }
+}
+
+export function useRoute(): Route {
+  const hash = useSyncExternalStore(subscribe, getHash)
+  return parseRoute(hash)
+}
+
+export function navigate(path: string, { keepQuery = false } = {}) {
+  const current = parseRoute(window.location.hash)
+  const query = keepQuery && current.query.toString() ? `?${current.query}` : ''
+  window.location.hash = path + query
+  window.scrollTo({ top: 0 })
+}
+
+export const href = (path: string) => `#${path}`
+
+// Demo controls are enabled with ?demo=1 either in the page URL or inside the hash.
+export const isDemo = () =>
+  new URLSearchParams(window.location.search).get('demo') === '1' || parseRoute(window.location.hash).query.get('demo') === '1'

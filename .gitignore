@@ -1,5 +1,17 @@
-node_modules
-dist
+# Dependencies (run `npm install`)
+node_modules/
+
+# Build output (run `npm run build`)
+dist/
+*.tsbuildinfo
+
+# OS / editor
 .DS_Store
-server/*.db
-server/*.db-*
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Logs
+*.log
+npm-debug.log*

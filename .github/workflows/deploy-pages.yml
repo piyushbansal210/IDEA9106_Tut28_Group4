@@ -1,0 +1,41 @@
+# Builds the app and publishes it to the gh-pages branch, which GitHub Pages serves at
+# https://piyushbansal210.github.io/IDEA9106_Tut28_Group4/
+# One-time setup by a repo admin: Settings → Pages → Source: "Deploy from a branch" → gh-pages / (root).
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [anu-aj]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - name: Publish dist/ to the gh-pages branch
+        run: |
+          cd dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Deploy ${GITHUB_SHA::7} from ${GITHUB_REF_NAME}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
