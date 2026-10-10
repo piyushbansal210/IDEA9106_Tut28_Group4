@@ -100,7 +100,7 @@ export default function TicketCard({ booking, seat, manage }: { booking: Booking
             ) : (
               <>
                 <button className="btn btn-secondary btn-sm" onClick={() => setOpen('transfer')}>Transfer</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => setOpen('resale')}>Resell at face value</button>
+                <button className="btn btn-secondary btn-sm" onClick={() => setOpen('resale')} aria-label="Resell at face value"><span className="hide-narrow">Resell at face value</span><span className="show-narrow">Resell</span></button>
               </>
             )}
           </div>

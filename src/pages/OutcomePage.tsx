@@ -53,7 +53,7 @@ function Success({ show, booking }: { show: Show; booking: Booking }) {
         <span className="badge badge-good" style={{ alignSelf: 'flex-start' }}><Icon name="check" /> Booking confirmed</span>
         <h1>You're going!</h1>
         <p className="muted">{booking.seats.length} {booking.seats.length === 1 ? 'ticket' : 'tickets'} · {money(booking.total)} paid. We've also emailed them to {store.user?.email}.</p>
-        <div className="row">
+        <div className="row actions-stack">
           <button className="btn btn-primary" onClick={download}><Icon name="calendar" size={18} /> Add to calendar</button>
           <button className="btn btn-secondary" onClick={share}><Icon name="share" size={18} /> Share with your group</button>
           <a className="btn btn-ghost" href={href('/tickets')}>View my tickets</a>
@@ -105,7 +105,7 @@ function SoldOut({ show, left }: { show: Show; left?: boolean }) {
             <li><span className="arrow">→</span><span><b>First refusal</b> on verified resale at face value.</span></li>
             <li><span className="arrow">→</span><span><b>Your group has been told</b>: message drafted, nothing to write.</span></li>
           </ul>
-          <div className="row">
+          <div className="row actions-stack">
             {existing ? (
               <span className="badge badge-good"><Icon name="check" /> Waitlist place {formatNumber(existing.place)} held</span>
             ) : (

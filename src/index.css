@@ -407,7 +407,7 @@ table.data th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06
 .demo-panel button[aria-pressed='true'] { background: #fff; color: var(--ink); }
 
 .empty { text-align: center; padding: 48px 16px; border: 1.5px dashed var(--border); border-radius: var(--radius); }
-.tooltip-q { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink-muted); color: var(--ink-muted); font-size: 11px; font-weight: 700; cursor: help; vertical-align: 1px; margin-left: 4px; background: none; padding: 0; }
+.tooltip-q { display: inline-grid; place-items: center; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--ink-muted); color: var(--ink-muted); font-size: 12px; font-weight: 700; cursor: help; vertical-align: 1px; margin-left: 4px; background: none; padding: 0; }
 
 .show-narrow { display: none; }
 @media (max-width: 480px) {
@@ -610,3 +610,91 @@ kbd { display: inline-block; min-width: 1.6em; padding: 1px 6px; border: 1px sol
 /* ===== CAPTCHA (only shown when the optional server is running) ===== */
 .captcha { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); }
 .captcha img { border-radius: 6px; border: 1px solid var(--border); max-width: 100%; height: auto; }
+
+/* ===== Responsive polish ===== */
+/* Icons placed inside text (spans, links, headings) stay on the same line as the words around them. */
+:is(span, a, b, strong, p, h1, h2, h3, li, label, legend, dt) > svg { display: inline-block; vertical-align: -0.18em; flex: none; }
+
+/* Plan table: on phones the "left" count moves under the badge so names and prices don't wrap word by word. */
+.plan-left-narrow { display: none; margin-top: 4px; }
+.qchart-after span { white-space: nowrap; }
+.qa-short { display: none; }
+/* Until the chart is wide, the shaded blocks' "estimate" label only gets clipped; the note above the chart explains them. */
+@media (max-width: 960px) {
+  .qchart-est { color: transparent; }
+  .qa-long { display: none; }
+  .qa-short { display: inline; }
+  .qchart-after span { right: 6px; }
+}
+.plan-table td:nth-child(2) b, .plan-table td:nth-child(2) .small { white-space: nowrap; }
+
+@media (max-width: 560px) {
+  .plan-table td { padding: 12px 4px; }
+  .plan-table td.left { display: none; }
+  .plan-left-narrow { display: block; }
+}
+
+/* Phones: a bit more room for content, and posters that don't fill a whole screen each. */
+@media (max-width: 600px) {
+  .card { padding: 18px; }
+  .card-tight { padding: 14px; }
+  .hero { padding: 20px 0 16px; }
+  .hero-slide { gap: 20px; }
+  .hero-slide .poster, .tour-head .poster { max-width: none; aspect-ratio: 16 / 10; }
+  .tour-card .poster { aspect-ratio: 16 / 10; }
+  .poster-gen { padding: 16px; }
+  .poster-gen .rings { right: -10%; top: -40%; width: 70%; }
+  .poster-artist { font-size: 26px; }
+  .tour-head { gap: 20px; }
+  h1 { font-size: clamp(28px, 8vw, 40px); }
+  .page { padding-top: 24px; padding-bottom: 48px; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .stats .stat b { font-size: 22px; }
+
+  /* Tickets: smaller stub so the details get the width. */
+  .ticket-main { padding: 16px; }
+  .ticket-stub { padding: 12px; }
+  .qr { width: 52px; height: 52px; }
+  .ticket-actions { gap: 4px 8px; }
+
+  /* Outcome and similar action rows: stacked full-width buttons are easier to hit than a ragged wrap. */
+  .actions-stack { flex-direction: column; align-items: stretch; }
+  .actions-stack > .btn { width: 100%; }
+  .actions-stack > .badge { align-self: flex-start; }
+}
+
+/* Touch screens: every tap target at least 44px high (WCAG 2.5.8 asks for 24px; 44px is the comfortable size). */
+@media (pointer: coarse), (max-width: 860px) {
+  .footer-links { gap: 0 20px; }
+  .footer a { display: inline-flex; align-items: center; min-height: 44px; }
+  .link-btn { min-height: 44px; display: inline-flex; align-items: center; }
+  .checkbox { min-height: 44px; align-items: center; }
+  .checkbox input { width: 22px; height: 22px; margin-top: 0; }
+  .modal-close { width: 44px; height: 44px; top: 8px; right: 8px; }
+  .tooltip-q { width: 24px; height: 24px; font-size: 13px; position: relative; }
+  .tooltip-q::after { content: ''; position: absolute; inset: -10px; }
+  .demo-panel button, .demo-bar button { min-height: 40px; }
+  .btn-sm { min-height: 40px; }
+  .dots button { width: 44px; height: 44px; }
+}
+
+/* Story timeline labels were 11px; keep every label readable. */
+.pin span, .qtrack-front, .nudge-top, .qchart-after span, .poster-sm .poster-tour { font-size: 12px; }
+
+/* Tablets: poster beside the text instead of alone above it, so the first screen isn't half empty. */
+@media (min-width: 601px) and (max-width: 859px) {
+  .hero-slide { grid-template-columns: 220px minmax(0, 1fr); gap: 28px; }
+  .hero-slide .poster { max-width: 220px; }
+  .tour-head { grid-template-columns: 220px minmax(0, 1fr); gap: 28px; }
+  .tour-head .poster { max-width: 220px; }
+  .poster-artist { font-size: 26px; }
+}
+
+/* Smallest phones (320px): the logged-out navbar (logo, search, theme, Log in) needs a little less spacing to fit. */
+@media (max-width: 380px) {
+  .navbar-inner { gap: 8px; }
+  .nav-actions { gap: 2px; }
+  .wordmark { font-size: 18px; gap: 6px; }
+  .wordmark svg { width: 22px; height: 22px; }
+  .nav-btn { padding-left: 12px; padding-right: 12px; }
+}

@@ -44,7 +44,7 @@ export default function QueueChart({ state }: { state: QueueState }) {
           })}
         </div>
         <div className="qchart-plot">
-          <div className="qchart-after" style={{ left: pct(FRONT) }}><span>After your turn</span></div>
+          <div className="qchart-after" style={{ left: pct(FRONT) }}><span><span className="qa-long">After your turn</span><span className="qa-short">After</span></span></div>
           {state.sections.map((s) => {
             const left = Math.max(0, s.estimate.at - s.estimate.width / 2)
             return (
@@ -63,7 +63,9 @@ export default function QueueChart({ state }: { state: QueueState }) {
         </div>
       </div>
 
-      <table className="visually-hidden">
+      {/* Tables ignore the 1px width of .visually-hidden, so the wrapper does the hiding. */}
+      <div className="visually-hidden">
+      <table>
         <caption>Your ranked sections, their status and tickets left</caption>
         <thead><tr><th>Choice</th><th>Section</th><th>Status</th><th>Tickets left</th></tr></thead>
         <tbody>
@@ -72,6 +74,7 @@ export default function QueueChart({ state }: { state: QueueState }) {
           ))}
         </tbody>
       </table>
+      </div>
     </section>
   )
 }
@@ -91,7 +94,10 @@ export function PlanTable({ state }: { state: QueueState }) {
                   <b style={{ fontWeight: 600, color: 'var(--ink)' }}>{s.name}</b>
                   <div className="small muted">{money(s.price)} each</div>
                 </td>
-                <td style={{ textAlign: 'right' }}>{s.skipped ? <span className="badge badge-off">Skipped</span> : <SectionBadge status={s.status} quantity={q} />}</td>
+                <td style={{ textAlign: 'right' }}>
+                  {s.skipped ? <span className="badge badge-off">Skipped</span> : <SectionBadge status={s.status} quantity={q} />}
+                  {s.status !== 'sold-out' && <div className="small muted plan-left-narrow num">{formatNumber(s.remaining)} left</div>}
+                </td>
                 <td className="left num">{s.status === 'sold-out' ? '' : `${formatNumber(s.remaining)} left`}</td>
               </tr>
             ))}
