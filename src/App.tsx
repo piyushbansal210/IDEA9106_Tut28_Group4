@@ -21,6 +21,7 @@ import OutcomePage from './pages/OutcomePage'
 import MyTickets from './pages/MyTickets'
 import AdminPage from './pages/AdminPage'
 import HelpPage from './pages/HelpPage'
+import GroupPage from './pages/GroupPage'
 import NotFound from './pages/NotFound'
 
 function Page() {
@@ -32,6 +33,7 @@ function Page() {
   if (a === 'admin' && !id) return <AdminPage />
   if (a === 'help' && !id) return <HelpPage />
   if (a === 'inbox' && !id) return <InboxPage />
+  if (a === 'group' && id && !b) return <GroupPage key={id} id={id} />
   if (a === 'tour' && id && !b) return <TourPage key={id} tourId={id} />
   if (a === 'tour' && b === 'show' && showId) {
     if (page === 'hub') return <PresaleHub showId={showId} />

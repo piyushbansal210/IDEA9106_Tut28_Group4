@@ -3,6 +3,7 @@ import type { Arena, Artist, Section, Show, Tour, User } from './types'
 export const seedUsers: User[] = [
   { username: 'admin', password: 'admin123', role: 'admin', name: 'QuickSeat Admin', email: 'admin@quickseat.test' },
   { username: 'customer', password: 'customer123', role: 'customer', name: 'Demo Customer', email: 'customer@quickseat.test' },
+  { username: 'friend', password: 'friend123', role: 'customer', name: 'Demo Friend', email: 'friend@quickseat.test' },
 ]
 
 export const artists: Artist[] = [

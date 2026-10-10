@@ -38,6 +38,12 @@ export function useShowAction() {
       else navigate(`/tour/${show.tourId}?plan=${show.id}&then=${page}`)
     }
 
+    // Friends in someone else's group don't queue themselves: the leader buys for everyone.
+    const group = store.groupFor(show.id)
+    if (group && group.leader !== store.user?.username && (status === 'waiting-room' || status === 'queue-open' || status === 'on-sale')) {
+      return navigate(`/group/${group.id}`)
+    }
+
     switch (status) {
       case 'announced':
       case 'presale-soon':

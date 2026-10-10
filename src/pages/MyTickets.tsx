@@ -2,6 +2,7 @@ import { useStore } from '../store'
 import { href } from '../router'
 import { formatNumber, formatShowDate } from '../seats'
 import TicketCard from '../components/TicketCard'
+import ResaleOffers from '../components/ResaleOffers'
 import { LoginGate, useDocumentTitle } from './shared'
 
 function Tickets() {
@@ -12,12 +13,14 @@ function Tickets() {
   const upcoming = withShow.filter((x) => Date.parse(x.show!.date) >= store.now)
   const past = withShow.filter((x) => Date.parse(x.show!.date) < store.now)
   const waitlists = store.waitlists.filter((w) => w.username === store.user?.username)
+  const groups = store.groups.filter((g) => store.user && g.members.includes(store.user.username) && store.findShow(g.showId))
+  const nameOf = (u: string) => store.users.find((x) => x.username === u)?.name ?? u
 
-  const group = (title: string, list: typeof withShow) => (
+  const group = (title: string, list: typeof withShow, manage = false) => (
     <section className="stack" aria-labelledby={`h-${title}`}>
       <h2 id={`h-${title}`} style={{ fontSize: 24 }}>{title}</h2>
       <div className="ticket-list">
-        {list.flatMap(({ b }) => b.seats.map((seat) => <TicketCard key={b.id + seat} booking={b} seat={seat} />))}
+        {list.flatMap(({ b }) => b.seats.map((seat) => <TicketCard key={b.id + seat} booking={b} seat={seat} manage={manage} />))}
       </div>
     </section>
   )
@@ -25,13 +28,33 @@ function Tickets() {
   return (
     <div className="container page stack-lg">
       <h1>My tickets</h1>
-      {!withShow.length && !waitlists.length && (
+      {!withShow.length && !waitlists.length && !groups.length && (
         <div className="empty stack-sm">
           <strong>No tickets yet.</strong>
           <a className="link-btn" href={href('/')}>Browse tours →</a>
         </div>
       )}
-      {upcoming.length > 0 && group('Upcoming', upcoming)}
+      {upcoming.length > 0 && group('Upcoming', upcoming, true)}
+      {groups.length > 0 && (
+        <section className="stack" aria-labelledby="h-groups">
+          <h2 id="h-groups" style={{ fontSize: 24 }}>Your groups</h2>
+          <ul className="stack-sm" style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+            {groups.map((g) => {
+              const show = store.findShow(g.showId)!
+              const tour = store.tourOf(show)
+              return (
+                <li key={g.id} className="card card-tight row between">
+                  <div className="stack-sm" style={{ gap: 2 }}>
+                    <strong>{store.artistOf(tour).name}: {tour.name} · {store.arenaOf(show).city}</strong>
+                    <span className="small muted">{g.members.length} {g.members.length === 1 ? 'person' : 'people'} · {g.leader === store.user?.username ? 'you queue for everyone' : `${nameOf(g.leader)} queues for everyone`}</span>
+                  </div>
+                  <a className="btn btn-secondary btn-sm" href={href(`/group/${g.id}`)}>Open group</a>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
       {past.length > 0 && group('Past', past)}
       {waitlists.length > 0 && (
         <section className="stack" aria-labelledby="h-wait">
@@ -43,12 +66,15 @@ function Tickets() {
               const tour = store.tourOf(show)
               const arena = store.arenaOf(show)
               return (
-                <li key={w.id} className="card card-tight row between">
-                  <div className="stack-sm" style={{ gap: 2 }}>
-                    <strong>{store.artistOf(tour).name}: {tour.name}</strong>
-                    <span className="small muted">{arena.city} · {formatShowDate(show.date, arena.timeZone)}</span>
+                <li key={w.id} className="stack-sm">
+                  <div className="card card-tight row between">
+                    <div className="stack-sm" style={{ gap: 2 }}>
+                      <strong>{store.artistOf(tour).name}: {tour.name}</strong>
+                      <span className="small muted">{arena.city} · {formatShowDate(show.date, arena.timeZone)}</span>
+                    </div>
+                    <span className="badge badge-info">Waitlist place {formatNumber(w.place)}</span>
                   </div>
-                  <span className="badge badge-info">Waitlist place {formatNumber(w.place)}</span>
+                  <ResaleOffers show={show} />
                 </li>
               )
             })}

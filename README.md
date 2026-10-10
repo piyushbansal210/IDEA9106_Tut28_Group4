@@ -38,7 +38,10 @@ To test the production build locally: `npm run build`, then `npx vite preview` a
 | Role     | Username | Password    |
 | -------- | -------- | ----------- |
 | Customer | customer | customer123 |
+| Customer | friend   | friend123   |
 | Admin    | admin    | admin123    |
+
+`friend` is there for trying groups and transfers with two people in one browser.
 
 ## Demo script
 
@@ -132,7 +135,17 @@ server job that runs on the same day-7 / day-1 / hour-before rules, render `buil
   are darkened slightly. Optional "Match the artist" mode.
 - **Presale streak:** pre-registration (push, email, quiet hours), a daily 20-second trivia question, a 30-day
   streak strip, a readiness checklist, daily nudges, simulated tips emails and a sale-day handoff (see above).
-- **My tickets** and **Admin** (edit tours, posters, sale times, sold-out flags, add/delete shows, bookings, reset demo data).
+- **Groups:** "Invite friends" on a date starts a group and copies a `#/group/<id>` link. Friends join, the leader's plan
+  and queue place cover everyone (friends pressing "Join queue" are sent to the group page instead), the plan warns when it
+  has fewer tickets than people, and after checkout the leader sends each friend their own ticket in one click. The group
+  page shows everyone who holds which seat, or the sold-out/waitlist result.
+- **Transfer and face-value resale:** every upcoming ticket in My tickets can be transferred to another QuickSeat account
+  (by username or email) or listed for resale at exactly what was paid, with no way to mark it up. Fans holding a waitlist
+  place for that show get first refusal: resale tickets appear under their waitlist and on the sold-out screen.
+- **Seat map keyboard:** one tab stop for the whole grid; arrow keys jump between free seats, Home/End go to the ends of
+  the row, Space/Enter picks, and `?` shows the shortcut list.
+- **My tickets** and **Admin** (edit tours, posters, sale times, sold-out flags, add/delete shows, bookings with their
+  source (sale, transfer or resale), resale and group counts, reset demo data).
 
 ## Adding real media
 
@@ -144,7 +157,7 @@ server job that runs on the same day-7 / day-1 / hour-before rules, render `buil
 ## Structure
 
 - `src/data.ts`: artists (bios, milestones), arenas and sections, tours, shows
-- `src/store.tsx`: app state (auth, bookings, plans, waitlists, admin edits) saved to localStorage
+- `src/store.tsx`: app state (auth, bookings, plans, waitlists, resale listings, groups, admin edits) saved to localStorage
 - `src/queue/simulator.ts`: deterministic queue simulation and storylines (no React)
 - `src/presale.tsx`: registrations, streak records, demo clock, nudges and the simulated inbox
 - `src/streak.ts` (pure rules) and `src/trivia.ts` (question bank); `src/emails.ts` (email templates)

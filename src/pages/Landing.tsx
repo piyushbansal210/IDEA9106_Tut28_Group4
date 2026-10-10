@@ -12,6 +12,7 @@ import StatusBadge from '../components/StatusBadge'
 import Countdown from '../components/Countdown'
 import Icon from '../components/Icon'
 import { WELCOME } from '../components/LoginModal'
+import { useDocumentTitle } from './shared'
 
 const countdownLabel: Partial<Record<string, string>> = {
   announced: 'On sale in',
@@ -130,6 +131,7 @@ const steps = [
 ]
 
 export default function Landing() {
+  useDocumentTitle('')
   const store = useStore()
   const { search, city, setCity, setSearch, user, openLogin } = store
 

@@ -22,7 +22,7 @@ function ShowEditor({ show }: { show: Show }) {
   return (
     <tr>
       <td>
-        <select className="input" aria-label="Arena" value={show.arenaId} disabled={sold > 0} title={sold > 0 ? 'Locked because tickets have been sold' : undefined} onChange={(e) => store.updateShow(show.id, { arenaId: e.target.value })}>
+        <select className="input" aria-label="Arena" style={{ minWidth: 230 }} value={show.arenaId} disabled={sold > 0} title={sold > 0 ? 'Locked because tickets have been sold' : undefined} onChange={(e) => store.updateShow(show.id, { arenaId: e.target.value })}>
           {arenas.map((a) => <option key={a.id} value={a.id}>{a.city} · {a.name}</option>)}
         </select>
       </td>
@@ -114,6 +114,9 @@ function Admin() {
         <div className="card stat"><span className="small muted">Revenue</span><b>{money(revenue)}</b></div>
         <div className="card stat"><span className="small muted">Shows</span><b>{store.shows.length}</b></div>
         <div className="card stat"><span className="small muted">Waitlist sign-ups</span><b>{store.waitlists.length}</b></div>
+        <div className="card stat"><span className="small muted">Listed for resale</span><b>{store.resales.length}</b></div>
+        <div className="card stat"><span className="small muted">Tickets via resale · transfer</span><b>{store.bookings.filter((b) => b.source?.kind === 'resale').length} · {store.bookings.filter((b) => b.source?.kind === 'transfer').length}</b></div>
+        <div className="card stat"><span className="small muted">Groups</span><b>{store.groups.length}</b></div>
       </section>
 
       {store.tours.map((tour) => (
@@ -152,7 +155,7 @@ function Admin() {
         {store.bookings.length === 0 ? <p className="muted">No bookings yet.</p> : (
           <div className="table-wrap">
             <table className="data">
-              <thead><tr><th>Customer</th><th>Show</th><th>Section</th><th>Tickets</th><th>Total</th><th>Booked</th></tr></thead>
+              <thead><tr><th>Customer</th><th>Show</th><th>Section</th><th>Tickets</th><th>Total</th><th>Source</th><th>Booked</th></tr></thead>
               <tbody>
                 {store.bookings.map((b) => {
                   const show = store.findShow(b.showId)
@@ -163,6 +166,7 @@ function Admin() {
                       <td>{show ? store.arenaOf(show).sections.find((s) => s.id === b.sectionId)?.name : '—'}</td>
                       <td>{b.seats.length}</td>
                       <td>{money(b.total)}</td>
+                      <td>{b.source ? `${b.source.kind === 'resale' ? 'Resale' : 'Transfer'} from ${b.source.from}` : 'Sale'}</td>
                       <td>{new Date(b.createdAt).toLocaleString('en-AU')}</td>
                     </tr>
                   )

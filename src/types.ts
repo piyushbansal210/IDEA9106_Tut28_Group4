@@ -86,6 +86,29 @@ export interface Booking {
   seats: string[]
   total: number
   createdAt: string
+  // Set when the seats came from another fan instead of the sale itself.
+  source?: { kind: 'transfer' | 'resale'; from: string }
+}
+
+// One seat offered back at face value. Waitlisted fans for the show get first refusal.
+export interface ResaleListing {
+  id: string
+  showId: string
+  bookingId: string
+  seat: string
+  seller: string
+  price: number
+  listedAt: string
+}
+
+// Friends going together: the leader's plan and queue place cover everyone.
+export interface Group {
+  id: string
+  showId: string
+  leader: string
+  members: string[]
+  createdAt: string
+  ticketsSent?: boolean
 }
 
 export interface Waitlist {

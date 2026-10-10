@@ -16,6 +16,7 @@ import StoryTimeline, { StoryPreview } from '../components/StoryTimeline'
 import Modal from '../components/Modal'
 import Icon from '../components/Icon'
 import ReadinessChecklist from '../components/ReadinessChecklist'
+import { copyGroupLink } from './GroupPage'
 import NotFound from './NotFound'
 
 function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
@@ -30,6 +31,18 @@ function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
   const label = useActionLabel()
   const presale = usePresale()
   const registration = presale.registrationFor(show.id)
+  const group = store.groupFor(show.id)
+  const inFriendsGroup = group && group.leader !== store.user?.username
+  const leaderName = group && (store.users.find((u) => u.username === group.leader)?.name ?? group.leader)
+
+  const invite = () =>
+    store.requireLogin('Log in to start a group. Friends who join are covered by your plan and queue place.', () => {
+      const g = store.createGroup(show.id)
+      if (!g) return
+      copyGroupLink(g.id)
+      store.toast('Group started and invite link copied. Send it to your friends.')
+      navigate(`/group/${g.id}`)
+    })
 
   return (
     <li className="show-row">
@@ -43,9 +56,11 @@ function ShowRow({ show, onPlan }: { show: Show; onPlan: (s: Show) => void }) {
         {target && <span className="small muted">{status === 'waiting-room' ? 'Queue opens in' : 'On sale in'} <Countdown to={target} /></span>}
         {plan && canPlan && <span className="small" style={{ color: 'var(--success)' }}><Icon name="check" size={14} /> Plan set</span>}
         {registration && <a className="small" href={href(showPath(show, 'hub'))}>Pre-registered · {presale.streakFor(show.id).length}-day streak</a>}
+        {group && <a className="small" href={href(`/group/${group.id}`)}><Icon name="users" size={14} /> {inFriendsGroup ? `In ${leaderName}'s group` : `Your group of ${group.members.length}`}</a>}
       </div>
       <div className="show-actions">
-        {canPlan && (
+        {canPlan && !group && <button className="btn btn-ghost" onClick={invite}><Icon name="users" size={18} /> Invite friends</button>}
+        {canPlan && !inFriendsGroup && (
           <button className="btn btn-secondary" onClick={() => store.requireLogin('Log in to set your ticket plan. It\'s saved to your account.', () => onPlan(show))}>
             {plan ? 'Edit plan' : 'Set my plan'}
           </button>
@@ -65,7 +80,6 @@ export default function TourPage({ tourId }: { tourId: string }) {
   const artist = tour && store.artistOf(tour)
   const [planShow, setPlanShow] = useState<Show | null>(null)
   const [storyOpen, setStoryOpen] = useState(false)
-  const [copied, setCopied] = useState(false)
 
   useRecordPlayerHost(artist?.id ?? null)
   useEffect(() => {
@@ -113,12 +127,7 @@ export default function TourPage({ tourId }: { tourId: string }) {
         <p className="muted small">Sort these out before the sale so nothing slows you down at the front of the queue.</p>
         <ReadinessChecklist tourId={tour.id} />
         <p className="small">
-          <Icon name="users" size={16} /> Going with friends?{' '}
-          <button className="link-btn" onClick={() => {
-            void navigator.clipboard?.writeText(`${location.origin}${location.pathname}#/tour/${tour.id}`).catch(() => {})
-            setCopied(true)
-            store.toast('Squad link copied. Friends who join are seated with you if your plan allows.')
-          }}>{copied ? 'Squad link copied ✓' : 'Copy a squad invite link'}</button> <span className="muted">(optional)</span>
+          <Icon name="users" size={16} /> Going with friends? Press <b>Invite friends</b> on a date. One of you queues and buys seats together for everyone, so nobody gets split up.
         </p>
       </section>
 

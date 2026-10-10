@@ -9,6 +9,8 @@ import ArenaMap from '../components/ArenaMap'
 import StoryTimeline from '../components/StoryTimeline'
 import Icon from '../components/Icon'
 import TicketCard from '../components/TicketCard'
+import ResaleOffers from '../components/ResaleOffers'
+import GroupCard from '../components/GroupCard'
 import { LoginGate, ShowHeader, useDocumentTitle } from './shared'
 import NotFound from './NotFound'
 
@@ -57,6 +59,7 @@ function Success({ show, booking }: { show: Show; booking: Booking }) {
           <a className="btn btn-ghost" href={href('/tickets')}>View my tickets</a>
         </div>
       </section>
+      <GroupCard show={show} booking={booking} />
       <div className="ticket-list">
         {booking.seats.map((seat) => <TicketCard key={seat} booking={booking} seat={seat} />)}
       </div>
@@ -112,6 +115,7 @@ function SoldOut({ show, left }: { show: Show; left?: boolean }) {
               {alerted ? 'Alert set ✓' : 'Alert me if a date is added'}
             </button>
           </div>
+          <ResaleOffers show={show} />
           <a className="link-btn small" href={href(`/tour/${tour.id}`)}>See other dates on this tour</a>
         </section>
       </div>
