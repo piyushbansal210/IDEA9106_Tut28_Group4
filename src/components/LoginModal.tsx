@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useStore } from '../store'
+import { useCaptcha } from '../captcha'
+import { readStored, STORAGE_PREFIX, writeStored } from '../storage'
 import Modal from './Modal'
 
 export const WELCOME = 'welcome'
@@ -14,15 +16,48 @@ function passwordScore(pw: string) {
 }
 const strengthLabel = ['', 'Weak', 'Okay', 'Good', 'Strong']
 
+// After this many wrong passwords, logging in pauses for a while. Kept for the browser tab, so a refresh doesn't reset it.
+const MAX_FAILS = 5
+const LOCK_MS = 30_000
+const FAILS_KEY = `${STORAGE_PREFIX}login-fails`
+
+interface Fails {
+  count: number
+  lockedUntil: number
+}
+
 function LoginForm() {
-  const { login } = useStore()
+  const { login, now } = useStore()
+  const captcha = useCaptcha()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [fails, setFailsState] = useState<Fails>(() => readStored(FAILS_KEY, { count: 0, lockedUntil: 0 }, true))
+  const setFails = (f: Fails) => {
+    setFailsState(f)
+    writeStored(FAILS_KEY, f, true)
+  }
+  // `now` ticks once a second, so clamp to avoid a brief "31 seconds".
+  const lockedFor = Math.min(LOCK_MS / 1000, Math.ceil((fails.lockedUntil - now) / 1000))
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
-    setError(login(identifier, password) ?? '')
+    if (lockedFor > 0 || busy) return
+    setBusy(true)
+    const captchaError = await captcha.verify()
+    setBusy(false)
+    if (captchaError) return setError(captchaError)
+    const loginError = login(identifier, password)
+    if (!loginError) return setFails({ count: 0, lockedUntil: 0 })
+    const count = fails.count + 1
+    if (count >= MAX_FAILS) {
+      setFails({ count: 0, lockedUntil: Date.now() + LOCK_MS })
+      setError(`Too many wrong tries, so logging in is paused for ${LOCK_MS / 1000} seconds.`)
+    } else {
+      setFails({ count, lockedUntil: 0 })
+      setError(`${loginError}${MAX_FAILS - count <= 2 ? ` ${MAX_FAILS - count} ${MAX_FAILS - count === 1 ? 'try' : 'tries'} left before a short pause.` : ''}`)
+    }
   }
 
   return (
@@ -35,8 +70,13 @@ function LoginForm() {
         Password
         <input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
       </label>
-      {error && <p className="error-text" role="alert">{error}</p>}
-      <button className="btn btn-primary btn-block" type="submit" disabled={!identifier || !password}>Log in</button>
+      {captcha.field}
+      {lockedFor > 0 ? (
+        <p className="error-text" role="alert">Too many wrong tries. You can try again in {lockedFor} {lockedFor === 1 ? 'second' : 'seconds'}.</p>
+      ) : (
+        error && <p className="error-text" role="alert">{error}</p>
+      )}
+      <button className="btn btn-primary btn-block" type="submit" disabled={!identifier || !password || lockedFor > 0 || busy}>{busy ? 'Checking…' : 'Log in'}</button>
       <p className="tiny muted">Demo accounts: customer / customer123 · admin / admin123</p>
     </form>
   )
@@ -47,6 +87,8 @@ function SignupForm() {
   const [form, setForm] = useState({ name: '', email: '', username: '', password: '' })
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
+  const captcha = useCaptcha()
 
   const errors = {
     name: form.name.trim().length < 2 ? 'Enter your name.' : '',
@@ -74,10 +116,14 @@ function SignupForm() {
     </label>
   )
 
-  const submit = (e: FormEvent) => {
+  const submit = async (e: FormEvent) => {
     e.preventDefault()
     setTouched({ name: true, email: true, username: true, password: true })
-    if (valid) setError(register(form) ?? '')
+    if (!valid || busy) return
+    setBusy(true)
+    const captchaError = await captcha.verify()
+    setBusy(false)
+    setError(captchaError ?? register(form) ?? '')
   }
 
   return (
@@ -92,8 +138,9 @@ function SignupForm() {
           <span className="tiny muted">Password strength: {strengthLabel[score]}</span>
         </div>
       )}
+      {captcha.field}
       {error && <p className="error-text" role="alert">{error}</p>}
-      <button className="btn btn-primary btn-block" type="submit">Create account</button>
+      <button className="btn btn-primary btn-block" type="submit" disabled={busy}>{busy ? 'Checking…' : 'Create account'}</button>
     </form>
   )
 }

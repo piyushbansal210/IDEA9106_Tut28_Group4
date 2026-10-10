@@ -33,6 +33,33 @@ accounts you sign up, bookings, plans and streaks stay on your device and aren't
 
 To test the production build locally: `npm run build`, then `npx vite preview` and open the printed URL.
 
+## Optional secure server (rate limits + CAPTCHA)
+
+GitHub Pages serves QuickSeat as static files from GitHub's CDN, which already absorbs traffic floods, so nothing is
+needed there. To host it yourself with extra protection, run the small Express server in `server/`:
+
+```bash
+npm run serve        # builds for "/" and starts http://localhost:3001
+```
+
+- **Rate limits** (`express-rate-limit`, per IP): 600 requests / 15 min overall, 120 / 15 min for `/api`, 30 new
+  CAPTCHAs / 10 min and 15 CAPTCHA answers / 5 min. Over the limit returns `429` with a plain message.
+- **Self-hosted CAPTCHA** on log in and sign up: a distorted-text image, or a plain-language sum for people who can't
+  read it (WCAG 1.1.1). The answer stays on the server; each challenge is single-use, expires after 2 minutes and allows
+  3 tries. The store is capped at 5,000 challenges, so a flood of requests can't use unbounded memory. No third party.
+- **Security headers** (`helmet`): a strict Content Security Policy (scripts only from the site, plus the one inline theme
+  script allowed by its hash), no framing, `nosniff`, HSTS and no referrer.
+- **Slow-request protection:** 1 KB JSON body limit, plus header/request timeouts that drop "slowloris" connections.
+- **Login lockout** (works everywhere, server or not): 5 wrong passwords pause logging in for 30 seconds.
+
+Without the server (GitHub Pages, or `npm run dev` on its own) the CAPTCHA is skipped, because a check that only runs in
+the browser can be bypassed. During development, run `npm run dev:server` next to `npm run dev` to see it.
+
+Limits: login, bookings and everything else still live in each browser (there's no shared database), so the CAPTCHA
+protects the server's resources and the sign-in form, not the data itself. Rate-limit counters are kept in memory, so
+they reset when the server restarts. Behind a host's proxy (Render, Railway, nginx), set `TRUST_PROXY=1` so limits count
+real visitors, not the proxy. `PORT` sets the port (default 3001).
+
 ## Demo accounts
 
 | Role     | Username | Password    |
@@ -157,6 +184,7 @@ server job that runs on the same day-7 / day-1 / hour-before rules, render `buil
 ## Structure
 
 - `src/data.ts`: artists (bios, milestones), arenas and sections, tours, shows
+- `server/`: optional Express host with rate limits, security headers and the self-hosted CAPTCHA (`server/captcha.ts`)
 - `src/store.tsx`: app state (auth, bookings, plans, waitlists, resale listings, groups, admin edits) saved to localStorage
 - `src/queue/simulator.ts`: deterministic queue simulation and storylines (no React)
 - `src/presale.tsx`: registrations, streak records, demo clock, nudges and the simulated inbox
